@@ -36,6 +36,7 @@ from suvix.errors import (
     InvalidInputError,
     MalformedOutputError,
     MediaProcessingError,
+    MissingEvidenceError,
     ProviderRequestError,
     ProviderTimeoutError,
     RecoveryExhaustedError,
@@ -43,7 +44,7 @@ from suvix.errors import (
     SuvixError,
     UnsupportedMediaError,
 )
-from suvix.evidence import validate_evidence_timestamps
+from suvix.evidence import validate_evidence, validate_evidence_timestamps
 from suvix.media.frames import FrameRegistry, SampledFrame, extract_frames_at
 from suvix.media.metadata import inspect_video
 from suvix.options import ExtractionOptions
@@ -51,7 +52,12 @@ from suvix.planner import StrategyDecision, select_strategy
 from suvix.recovery import build_repair_request, is_recoverable
 from suvix.sampling.uniform import uniform_timestamps
 from suvix.usage import build_usage
-from suvix.validation import validate_data, validate_schema
+from suvix.validation import (
+    SemanticContext,
+    validate_data,
+    validate_schema,
+    validate_semantics,
+)
 
 _FENCE_PREFIXES = ("```json", "```")
 
@@ -109,12 +115,21 @@ def _normalize_output(extraction: ProviderExtraction) -> dict[str, Any]:
 
 
 def _validate_extraction(
-    extraction: ProviderExtraction, schema: dict[str, Any]
+    extraction: ProviderExtraction,
+    schema: dict[str, Any],
+    *,
+    context: SemanticContext | None = None,
 ) -> tuple[dict[str, Any] | None, ValidationReport]:
     """Normalize + validate one provider outcome.
 
     Malformed output becomes a report issue (code ``malformed_output``) instead
     of raising immediately, so bounded recovery gets a chance to repair it.
+
+    Beyond structural validation, deterministic semantic checks always run
+    (finite, non-negative, ordered time values). When ``context`` carries
+    media knowledge (video duration, frame registry), the full evidence
+    validation runs too: timestamps must fall within the duration (+ tolerance)
+    and ``frame`` evidence must resolve in the registry.
     """
     try:
         data = _normalize_output(extraction)
@@ -123,9 +138,23 @@ def _validate_extraction(
             valid=False,
             issues=[ValidationIssue(code="malformed_output", message=str(exc))],
         )
-    return data, _combine_reports(
-        validate_data(data, schema),
-        validate_evidence_timestamps(extraction.evidence),
+    ctx = context if context is not None else SemanticContext()
+    issues = list(validate_data(data, schema).issues)
+    if ctx.video_duration_seconds is not None or ctx.frame_registry is not None:
+        issues.extend(
+            validate_evidence(
+                list(extraction.evidence),
+                video_duration_seconds=ctx.video_duration_seconds,
+                frame_registry=ctx.frame_registry,
+                tolerance_seconds=ctx.timestamp_tolerance_seconds,
+            )
+        )
+    else:
+        issues.extend(validate_evidence_timestamps(extraction.evidence))
+    issues.extend(validate_semantics(data, context=ctx))
+    return data, ValidationReport(
+        valid=not any(issue.severity == "error" for issue in issues),
+        issues=issues,
     )
 
 
@@ -153,17 +182,6 @@ async def _call_adapter(
             f"Adapter {extractor.name} failed: {exc}",
             details={"adapter": extractor.name, "error_type": type(exc).__name__},
         ) from exc
-
-
-def _combine_reports(
-    data_report: ValidationReport, evidence_issues: list[ValidationIssue]
-) -> ValidationReport:
-    if not evidence_issues:
-        return data_report
-    return ValidationReport(
-        valid=data_report.valid and not evidence_issues,
-        issues=[*data_report.issues, *evidence_issues],
-    )
 
 
 def _to_frame_input(frame: SampledFrame) -> FrameInput:
@@ -237,9 +255,14 @@ async def _finalize(
         extraction, dropped = _filter_unknown_frame_evidence(extraction, registry)
         dropped_warnings.extend(dropped)
 
-    # Normalize output, validate structurally + evidence sanity.
+    # Normalize output, then validate: structural + deterministic semantic
+    # checks, with full evidence validation when media context is known.
     # Malformed output becomes a recoverable report issue, not an instant raise.
-    data, report = _validate_extraction(extraction, schema)
+    context = SemanticContext(
+        video_duration_seconds=video_duration_seconds,
+        frame_registry=registry,
+    )
+    data, report = _validate_extraction(extraction, schema, context=context)
 
     # Bounded selective recovery (same extractor, same model, same strategy).
     recovery_attempts = 0
@@ -255,7 +278,7 @@ async def _finalize(
         if registry is not None:
             extraction, dropped = _filter_unknown_frame_evidence(extraction, registry)
             dropped_warnings.extend(dropped)
-        data, report = _validate_extraction(extraction, schema)
+        data, report = _validate_extraction(extraction, schema, context=context)
 
     # Final verdict: raise documented errors, never silent empty data.
     if not report.valid:
@@ -281,6 +304,13 @@ async def _finalize(
         )
 
     assert data is not None  # valid report implies parseable object output
+    if options.require_evidence and not extraction.evidence:
+        raise MissingEvidenceError(
+            "options.require_evidence=True but the extraction produced no "
+            "evidence references.",
+            details={"strategy": decision.strategy,
+                     "provider": capabilities.provider},
+        )
     usage = build_usage(
         provider_usage=extraction.usage if options.collect_usage else {},
         provider_requests=provider_calls,
