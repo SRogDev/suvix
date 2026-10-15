@@ -5,14 +5,13 @@ developer-defined structured data: you provide a video, a JSON Schema, instructi
 and an explicitly chosen provider — Suvix handles the extraction workflow, validation,
 evidence references, and execution metadata.
 
-> **Status: Milestone 3 done (v0.1.0).** The public API, core contracts, media layer,
-> and the **first real provider (Gemini)** are implemented and tested — 156 tests
-> (51 for the Gemini adapter, mocked; 1 opt-in integration test requiring
-> `SUVIX_RUN_INTEGRATION_TESTS=1` and `GEMINI_API_KEY`). Provider capabilities are
-> verified against official docs, not assumed — see `docs/providers/gemini.md`.
-> OpenRouter/TwelveLabs arrive in **Milestone 7**, selected-frame extraction in
-> **Milestone 5**. See [STATUS.md](STATUS.md) for the live timeline. Nothing in this
-> README describes behavior that does not exist yet.
+> **Status: Milestone 4 done (v0.1.0).** The public API, core contracts, media layer,
+> the **first real provider (Gemini)**, and a **local Streamlit playground** are
+> implemented and tested — 159 tests. Provider capabilities are verified against
+> official docs — see `docs/providers/gemini.md`. OpenRouter/TwelveLabs arrive in
+> **Milestone 7**, selected-frame extraction in **Milestone 5**. See [STATUS.md](STATUS.md)
+> for the live timeline. Nothing in this README describes behavior that does not
+> exist yet.
 
 ## What Suvix is (and is not)
 
@@ -98,7 +97,29 @@ Capability notes (all verified 2026-10-15 against official docs — nothing aspi
   it sampled, so Suvix does not claim frame-level verification.
 - Usage comes from the provider's `usage_metadata`; missing values stay missing.
 
-## Developer experience (Milestone 1 — works today with the fake adapter)
+## Local playground (Milestone 4)
+
+An optional Streamlit app for trying the library without building a frontend:
+
+```bash
+uv sync --extra playground --extra gemini   # gemini extra optional
+uv run streamlit run playground/app.py
+```
+
+It uses **only the public API**: upload a video (nothing is sent anywhere until you
+press *Run extraction*), enter instructions, edit the JSON Schema, pick a provider
+(`fake` works offline; installed adapters light up automatically), choose a strategy,
+tune the bounded options, and inspect the JSON / evidence / validation / usage /
+execution tabs. Results export as JSON on explicit action.
+
+Credentials come from environment variables (`GEMINI_API_KEY`, …) — shown as
+set/not set, never displayed, logged, or exported. No accounts, no database, no
+history. Uploads are capped and deleted after each run.
+
+## Developer experience (works today with the fake adapter)
+
+`suvix.adapters.fake.FakeExtractor` exercises the whole pipeline offline with
+scripted responses (real adapters: `suvix.adapters.gemini` today, more in M7):
 
 The public API is implemented. Real provider adapters land in Milestones 3/7;
 until then, `suvix.adapters.fake.FakeExtractor` exercises the whole pipeline

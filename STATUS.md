@@ -58,9 +58,18 @@ Single source of truth for where the project stands. Updated with every mileston
   - Integration note: provider test modules now `importorskip` their SDK so the
     default `--extra dev` suite stays green without optional extras.
 
+- **2026-10-15 — PR #5: Milestone 4 — end-to-end Streamlit playground.**
+  - `playground/app.py` (public API only): upload (no auto provider call),
+    instructions, schema editor, provider radio (fake always; installed adapters
+    light up automatically — Gemini verified live), strategy radio with the M5
+    gap labeled, bounded options, 5 result tabs, explicit JSON export.
+  - Secrets via env vars (set/not set only); uploads capped + deleted per run.
+  - Headless AppTest verified: boot, provider discovery, full fake-adapter run
+    (valid data, 5 tabs, validation passed). 159 tests green, ruff clean.
+
 ## In progress
 
-**Milestone 4: end-to-end Streamlit playground** (PR #5) — builder working; next to integrate.
+**Milestone 5: selected-frame extraction + coarse-to-fine** (PR #6) — builder done; integrating next.
 
 ## Next (milestones)
 
@@ -69,8 +78,8 @@ Single source of truth for where the project stands. Updated with every mileston
 | 1 | Core contracts + fake adapter | #2 | ✅ done 2026-10-15 |
 | 2 | Media metadata + selected-frame foundation | #3 | ✅ done 2026-10-15 |
 | 3 | First real provider: Gemini | #4 | ✅ done 2026-10-15 |
-| 4 | End-to-end Streamlit playground | #5 | next |
-| 5 | Selected-frame extraction + coarse-to-fine | #6 |
+| 4 | End-to-end Streamlit playground | #5 | ✅ done 2026-10-15 |
+| 5 | Selected-frame extraction + coarse-to-fine | #6 | next |
 | 6 | Validation + selective recovery | #7 |
 | 7 | OpenRouter + TwelveLabs adapters | #8 |
 | 8 | Benchmark suite | #9 |
