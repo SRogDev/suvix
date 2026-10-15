@@ -59,7 +59,7 @@ class Suvix:
             InvalidInputError: malformed video reference or instructions.
             UnsupportedSchemaError: the schema is not valid Draft 2020-12.
             UnsupportedStrategyError: the strategy is unsupported by the
-                adapter, or ``selected_frames`` (Milestone 5, not yet built).
+                adapter's capabilities.
             ProviderRequestError (incl. RateLimitError, ProviderTimeoutError):
                 the provider call failed.
             MalformedOutputError: provider output was not parseable JSON.
