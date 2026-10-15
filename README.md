@@ -5,14 +5,15 @@ developer-defined structured data: you provide a video, a JSON Schema, instructi
 and an explicitly chosen provider — Suvix handles the extraction workflow, validation,
 evidence references, and execution metadata.
 
-> **Status: Milestone 8 done (v0.1.0).** The public API, core contracts, media layer,
-> selected-frame extraction with bounded coarse-to-fine, full validation and
-> selective recovery, three real providers (Gemini, OpenRouter, TwelveLabs),
-> a local Streamlit playground, and the **benchmark suite (baselines A–E)** are
-> implemented and tested — 343 tests. All provider capabilities are verified
-> against official docs — see `docs/providers/`.
-> See [STATUS.md](STATUS.md) for the live timeline. Nothing in this README describes
-> behavior that does not exist yet.
+> **Status: v0.1.0 released (Milestone 9 done).** The public API, core contracts,
+> media layer, selected-frame extraction with bounded coarse-to-fine, full
+> validation and selective recovery, three real providers (Gemini, OpenRouter,
+> TwelveLabs), a local Streamlit playground, and the benchmark suite
+> (baselines A–E) are implemented and tested — 343 tests. All provider
+> capabilities are verified against official docs — see `docs/providers/`.
+> See [STATUS.md](STATUS.md) for the live timeline and [CHANGELOG.md](CHANGELOG.md)
+> for release notes. Nothing in this README describes behavior that does not
+> exist yet.
 
 ## What Suvix is (and is not)
 
@@ -117,40 +118,39 @@ Credentials come from environment variables (`GEMINI_API_KEY`, …) — shown as
 set/not set, never displayed, logged, or exported. No accounts, no database, no
 history. Uploads are capped and deleted after each run.
 
-## Developer experience (works today with the fake adapter)
+## Quickstart
 
-`suvix.adapters.fake.FakeExtractor` exercises the whole pipeline offline with
-scripted responses (real adapters: `suvix.adapters.gemini` today, more in M7):
-
-The public API is implemented. Real provider adapters land in Milestones 3/7;
-until then, `suvix.adapters.fake.FakeExtractor` exercises the whole pipeline
-offline with scripted responses:
+Offline with the fake adapter (no network, no keys) — the whole pipeline,
+validation, and recovery work end to end:
 
 ```python
 import asyncio
-from pydantic import BaseModel
 
 from suvix import Suvix
-from suvix.adapters.fake import FakeExtractor  # offline stand-in; real adapters in M3/M7
-
-
-class Event(BaseModel):
-    timestamp_seconds: float
-    event_type: str
-    evidence: str
-
-
-class Extraction(BaseModel):
-    events: list[Event]
-
+from suvix.adapters.fake import FakeExtractor  # offline stand-in
 
 extractor = FakeExtractor(script=[{"data": {"events": [
-    {"timestamp_seconds": 1.5, "event_type": "goal", "evidence": "crowd roars"}]}}])
-suvix = Suvix()
+    {"timestamp_seconds": 1.5, "event_type": "goal"}]}}])
 
-result = asyncio.run(suvix.extract(
+result = asyncio.run(Suvix().extract(
     video="sample.mp4",
-    schema=Extraction.model_json_schema(),
+    schema={
+        "type": "object",
+        "properties": {
+            "events": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "timestamp_seconds": {"type": "number"},
+                        "event_type": {"type": "string"},
+                    },
+                    "required": ["timestamp_seconds", "event_type"],
+                },
+            }
+        },
+        "required": ["events"],
+    },
     instructions="Identify each visible event of interest.",
     extractor=extractor,
 ))
@@ -158,8 +158,24 @@ result = asyncio.run(suvix.extract(
 print(result.data)              # schema-validated extracted data
 print(result.evidence)          # traceable timestamps / frame references
 print(result.validation.valid)  # local validation outcome
-print(result.usage)             # provider-reported usage and cost estimates
+print(result.usage)             # provider-reported usage and cost basis
 ```
+
+With a real provider (Gemini shown; needs `GEMINI_API_KEY`):
+
+```python
+from suvix.adapters.gemini import GeminiExtractor  # needs: uv add "suvix[gemini]"
+
+extractor = GeminiExtractor()  # model="gemini-3.8-flash" by default
+result = asyncio.run(Suvix().extract(
+    video="sample.mp4",
+    schema={...},               # your JSON Schema (Draft 2020-12)
+    instructions="...",
+    extractor=extractor,
+))
+```
+
+See [`examples/`](examples/) for runnable scripts, including a custom adapter.
 
 ## Extraction strategies
 
@@ -202,11 +218,36 @@ baselines — see [docs/benchmarking.md](docs/benchmarking.md). No verified
 provider prices are bundled, so cost figures stay unavailable until you register
 your own pricing. Negative results are retained and reported.
 
+## Known limitations
+
+- **No cost/accuracy claims ship with this library.** Whether orchestration beats
+  direct provider calls is answered only by running `suvix.evaluation` yourself;
+  no verified provider prices are bundled.
+- **Coarse-to-fine is not exhaustive.** The coarse pass can miss brief events;
+  it narrows where to look, it does not guarantee finding everything.
+- **Semantic validation checks ranges, not truth.** Timestamps are verified to be
+  finite, ordered, and within the video — never that the model truly saw the event.
+- **Provider-reported evidence is labeled, not verified.** For native video,
+  Suvix does not know which frames the provider inspected; those refs stay
+  `provider_reported`.
+- **Structured-output strictness varies.** OpenRouter enforces it per endpoint,
+  not per model; the adapter routes with `require_parameters` but cannot
+  guarantee every endpoint.
+- **TwelveLabs uploads leave the machine.** Assets are deleted after each call,
+  but provider-side retention policies apply — see `docs/providers/twelvelabs.md`.
+- **Benchmarks need keys and money.** The suite runs offline with fakes; real
+  provider baselines make billable API calls and are opt-in.
+
 ## Documentation
 
 - [SUVIX_PLAN.md](SUVIX_PLAN.md) — the full implementation specification.
 - [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) — project context for handoff to another AI.
+- [docs/architecture.md](docs/architecture.md) — pipeline, adapter contract, boundaries.
+- [docs/privacy.md](docs/privacy.md) — local processing, provider uploads, cleanup, no-cache.
+- [docs/benchmarking.md](docs/benchmarking.md) — running the benchmark suite.
+- [docs/providers/](docs/providers/) — per-provider verification records (§7.4).
 - [docs/decisions/](docs/decisions/) — architecture decision records.
+- [CHANGELOG.md](CHANGELOG.md) — release notes.
 - Provider docs (`docs/providers/`) — added per provider, with verified capabilities only.
 
 ## Testing
