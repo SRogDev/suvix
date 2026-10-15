@@ -5,11 +5,12 @@ developer-defined structured data: you provide a video, a JSON Schema, instructi
 and an explicitly chosen provider — Suvix handles the extraction workflow, validation,
 evidence references, and execution metadata.
 
-> **Status: Milestone 1 done (v0.1.0).** The public API (`Suvix.extract`), core
+> **Status: Milestone 2 done (v0.1.0).** The public API (`Suvix.extract`), core
 > contracts, adapter protocol, rule-based strategy planner, local JSON Schema
-> validation, and bounded recovery are implemented and tested with a deterministic
-> fake adapter — no network, no API keys. Real providers arrive in **Milestones 3/7**,
-> media/frame support in **Milestones 2/5**. See [STATUS.md](STATUS.md) for the live
+> validation, bounded recovery, and the **media layer** (ffprobe metadata, timestamp-honest
+> frame extraction, deterministic uniform sampling, segment math) are implemented and
+> tested — 105 tests, no network, no API keys. Real providers arrive in **Milestones 3/7**,
+> selected-frame extraction in **Milestone 5**. See [STATUS.md](STATUS.md) for the live
 > timeline. Nothing in this README describes behavior that does not exist yet.
 
 ## What Suvix is (and is not)
@@ -49,6 +50,22 @@ uv add "suvix[gemini]"
 
 Provider SDKs are optional extras (`gemini`, `openrouter`, `twelvelabs`); the core
 never imports them. The local Streamlit playground is another optional extra (`playground`).
+Media processing shells out to the **optional external `ffmpeg`/`ffprobe` binaries** —
+their absence raises a clear, actionable error instead of failing obscurely.
+
+## Media layer (Milestone 2)
+
+`suvix.media` is provider-neutral:
+
+- `inspect_video(path)` — duration, dimensions, frame rate, codec, audio presence,
+  file size, via ffprobe (async, offloaded to a thread).
+- `extract_frames_at(path, timestamps)` — one JPEG per timestamp with accurate
+  seeking; presentation timestamps are parsed from the container when possible
+  (`pts_verified=True`) and clearly marked as requested-timestamp fallbacks otherwise.
+  Temporary files are always cleaned up; results carry image bytes in memory.
+- `suvix.sampling.uniform_timestamps(...)` — deterministic uniform sampling.
+- `suvix.media.split_into_segments(...)` / `to_global_seconds(...)` — segment math
+  with correct offset handling for the coarse-to-fine workflow (Milestone 5).
 
 ## Developer experience (Milestone 1 — works today with the fake adapter)
 
