@@ -5,11 +5,11 @@ developer-defined structured data: you provide a video, a JSON Schema, instructi
 and an explicitly chosen provider — Suvix handles the extraction workflow, validation,
 evidence references, and execution metadata.
 
-> **Status: Milestone 6 done (v0.1.0).** The public API, core contracts, media layer,
-> selected-frame extraction with bounded coarse-to-fine, **full validation
-> (structural + deterministic semantic + evidence) and selective recovery**,
-> the first real provider (Gemini), and a local Streamlit playground are
-> implemented and tested — 216 tests. OpenRouter/TwelveLabs arrive in **Milestone 7**.
+> **Status: Milestone 7 done (v0.1.0).** The public API, core contracts, media layer,
+> selected-frame extraction with bounded coarse-to-fine, full validation and
+> selective recovery, **three real providers (Gemini, OpenRouter, TwelveLabs)**,
+> and a local Streamlit playground are implemented and tested — 274 tests.
+> All provider capabilities are verified against official docs — see `docs/providers/`.
 > See [STATUS.md](STATUS.md) for the live timeline. Nothing in this README describes
 > behavior that does not exist yet.
 
@@ -72,8 +72,8 @@ their absence raises a clear, actionable error instead of failing obscurely.
 | Provider | Extra | Strategies | Structured output | Verification |
 |---|---|---|---|---|
 | Gemini | `suvix[gemini]` | native video, selected frames | Verified JSON Schema subset (see below) | [`docs/providers/gemini.md`](docs/providers/gemini.md) |
-| OpenRouter | `suvix[openrouter]` | Milestone 7 | — | — |
-| TwelveLabs | `suvix[twelvelabs]` | Milestone 7 | — | — |
+| OpenRouter | `suvix[openrouter]` | selected frames | `response_format` json_schema (strict) + `require_parameters`; strictness is per-endpoint, enforced by routing | [`docs/providers/openrouter.md`](docs/providers/openrouter.md) |
+| TwelveLabs | `suvix[twelvelabs]` | native video, selected frames | `response_format` json_schema (sync analyze API); assets deleted after each call | [`docs/providers/twelvelabs.md`](docs/providers/twelvelabs.md) |
 
 ```python
 from suvix import Suvix

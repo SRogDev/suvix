@@ -9,13 +9,13 @@ developer's schema. Budgets are asserted across rounds, never per round.
 import shutil
 
 import pytest
-from test_selected_frames import GOOD, IMAGE_ONLY_CAPS, SCHEMA
 
 from suvix import Suvix
 from suvix.adapters.fake import FakeExtractor
 from suvix.errors import SchemaValidationError
 from suvix.options import ExtractionOptions
 from suvix.sampling.coarse_to_fine import COARSE_SCHEMA
+from tests.unit.test_selected_frames import GOOD, IMAGE_ONLY_CAPS, SCHEMA
 
 pytestmark = pytest.mark.skipif(
     shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None,
