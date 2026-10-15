@@ -303,8 +303,7 @@ class GeminiExtractor:
         self._TimeoutException = httpx.TimeoutException
         self._model = model
         self._poll_interval = poll_interval_seconds
-        # The key lives inside the SDK client only; it is never logged or
-        # interpolated into exception messages by this adapter.
+        self._api_key = key  # stored only to redact it from error text below
         self._client = genai.Client(api_key=key)
 
     @property
@@ -532,6 +531,19 @@ class GeminiExtractor:
         if isinstance(exc, self._APIError):
             code = getattr(exc, "code", None)
             if code == 429:
-                return RateLimitError(f"Gemini rate limit exceeded (HTTP 429): {exc}")
-            return ProviderRequestError(f"Gemini API error (HTTP {code}): {exc}")
-        return ProviderRequestError(f"Gemini request failed: {exc}")
+                return RateLimitError(
+                    f"Gemini rate limit exceeded (HTTP 429): {self._redact(exc)}"
+                )
+            return ProviderRequestError(
+                f"Gemini API error (HTTP {code}): {self._redact(exc)}"
+            )
+        return ProviderRequestError(
+            f"Gemini request failed: {self._redact(exc)}"
+        )
+
+    def _redact(self, exc: Exception) -> str:
+        """Redact the API key from SDK exception text (defense in depth)."""
+        text = str(exc)
+        if self._api_key and self._api_key in text:
+            return text.replace(self._api_key, "[REDACTED]")
+        return text

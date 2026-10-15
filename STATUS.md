@@ -134,9 +134,47 @@ Single source of truth for where the project stands. Updated with every mileston
     `max_refinement_rounds=2`, making it identical to D — fixed and pinned.
   - 343 tests green (69 new), ruff clean.
 
+- **2026-10-15 — PR #10: Milestone 9 — release readiness (v0.1.0).**
+  - Public API review: `suvix/__init__.py` exports `Suvix`, `ExtractionOptions`,
+    result contracts, and the full error hierarchy; adapters stay behind
+    `suvix.adapters.*`; `suvix.evaluation` is a separate subpackage.
+  - Docs: README quickstart rewritten (was stale, spoke of M3/M7 as future);
+    new "Known limitations" section (§21.1); new `docs/privacy.md` (§21.4);
+    CHANGELOG.md with v0.1.0 release notes.
+  - Packaging: `uv build` → wheel + sdist; clean-env venv installs the wheel
+    and runs `examples/basic_extraction.py`; `suvix[gemini]` extra resolves
+    and installs from the wheel (google-genai present, adapter importable).
+  - Examples: `examples/basic_extraction.py` (offline fake), `examples/`
+    `custom_extractor.py` (hand-written `VideoExtractor`) — both run.
+  - Security: no `print()` in library code; API keys redacted from all mapped
+    error text (uniform `_redact` added to the Gemini adapter to match the
+    other two); keys via arg-or-env only.
+  - License: MIT file present, matches pyproject.
+  - CI: `.github/workflows/ci.yml` prepared but NOT pushed — the automation
+    credential lacks the `workflows` scope (GitHub API refuses). Roger must
+    push it with a full-scope token or local git remote (instructions in the
+    file header).
+  - 343 tests green, ruff clean.
+
 ## In progress
 
-**Milestone 9: release readiness** (PR #10) — final pass next.
+All 10 milestones complete. v0.1.0 released on `main`.
+
+## Pending Roger's action (not blocking the release)
+
+- **CI workflow**: `.github/workflows/ci.yml` is written but could not be
+  pushed — the automation credential lacks the `workflows` scope. Push it
+  with a full-scope token or from a local git remote (instructions in the
+  file header).
+- **Provider API keys**: `GEMINI_API_KEY`, `OPENROUTER_API_KEY`,
+  `TWELVELABS_API_KEY` — integration tests (`SUVIX_RUN_INTEGRATION_TESTS=1`)
+  and real benchmark runs need them; no paid calls were made during development.
+- **PyPI publish**: `uv build` artifacts verified locally; the
+  `uv add "suvix[gemini]"` downstream command can only be verified after
+  publication.
+- **Real benchmark runs**: the suite is ready (baselines A–E); running it
+  against real providers is the experiment that answers the central research
+  question.
 
 ## Next (milestones)
 
@@ -150,10 +188,25 @@ Single source of truth for where the project stands. Updated with every mileston
 | 6 | Validation + selective recovery | #7 | ✅ done 2026-10-15 |
 | 7 | OpenRouter + TwelveLabs adapters | #8 | ✅ done 2026-10-15 |
 | 8 | Benchmark suite | #9 | ✅ done 2026-10-15 |
-| 9 | Release readiness | #10 | next |
+| 9 | Release readiness | #10 | ✅ done 2026-10-15 |
 
 Full milestone definitions: [SUVIX_PLAN.md](SUVIX_PLAN.md) §22.
 Definition of done: [SUVIX_PLAN.md](SUVIX_PLAN.md) §24.
+
+## Verification evidence (PR #10 — Milestone 9)
+
+- `uv run pytest` → 343 passed, 3 skipped (opt-in provider integration tests).
+- `uv run ruff check src tests` → clean.
+- `uv build` → `dist/suvix-0.1.0.tar.gz` + `dist/suvix-0.1.0-py3-none-any.whl`.
+- Clean venv: wheel installs; `import suvix` OK; `examples/basic_extraction.py`
+  and `examples/custom_extractor.py` run end to end.
+- `suvix[gemini]` extra installs from the wheel in a clean venv
+  (google-genai present, adapter importable).
+- Security grep: no `print()` in `src/`; no SDK imports outside
+  `src/suvix/adapters/`; API-key redaction uniform across all three adapters.
+- §24 Definition of Done reviewed item by item — see the coordinator's final
+  report for the two items that need Roger's action (CI push, PyPI publish)
+  and the one that needs keys + budget (live provider verification).
 
 ## Verification evidence (PR #9 — Milestone 8)
 
