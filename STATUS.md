@@ -32,10 +32,10 @@ Nothing yet — next is **Milestone 1: core contracts + fake adapter** (PR #2).
 
 ## Next (milestones)
 
-| # | Milestone | PR |
-|---|-----------|----|
-| 1 | Core contracts + fake adapter | #2 |
-| 2 | Media metadata + selected-frame foundation | #3 |
+| # | Milestone | PR | Status |
+|---|-----------|----|--------|
+| 1 | Core contracts + fake adapter | #2 | ✅ done 2026-10-15 |
+| 2 | Media metadata + selected-frame foundation | #3 | next |
 | 3 | First real provider: Gemini | #4 |
 | 4 | End-to-end Streamlit playground | #5 |
 | 5 | Selected-frame extraction + coarse-to-fine | #6 |
@@ -46,6 +46,15 @@ Nothing yet — next is **Milestone 1: core contracts + fake adapter** (PR #2).
 
 Full milestone definitions: [SUVIX_PLAN.md](SUVIX_PLAN.md) §22.
 Definition of done: [SUVIX_PLAN.md](SUVIX_PLAN.md) §24.
+
+## Verification evidence (PR #2 — Milestone 1)
+
+- `uv run pytest` → 60 passed (was 8 collection errors before implementation: RED→GREEN).
+- `uv run ruff check src tests` → clean.
+- README example (fake adapter) executed: returns schema-valid data,
+  `validation.valid=True`, strategy `native_video`, 1 provider call.
+- No network, no API keys used. `selected_frames` raises documented
+  `UnsupportedStrategyError` (gap labeled for M5, not hidden).
 
 ## Verification evidence (PR #1)
 
