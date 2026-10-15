@@ -45,10 +45,22 @@ Single source of truth for where the project stands. Updated with every mileston
     PTS-honest timestamps), `segments.py` (segment math + offsets).
   - `src/suvix/sampling/`: `uniform.py` (deterministic), `base.py` (Sampler protocol).
   - 105 tests green (incl. real VFR clip test), ruff clean.
+- **2026-10-15 — PR #4: Milestone 3 — first real provider: Gemini.**
+  - `src/suvix/adapters/gemini.py`: `GeminiExtractor` (Files API upload +
+    bounded ACTIVE poll + `generate_content` with translated
+    `response_json_schema`; selected frames as labeled multi-image parts;
+    upload deleted in `finally`; lazy SDK import; key never logged).
+  - `docs/providers/gemini.md`: §7.4 verification record (VERIFIED vs
+    UNVERIFIED separated; default model `gemini-3.8-flash` per current docs).
+  - Shared contract tests pass (mocked SDK); 51 adapter unit tests; 1 opt-in
+    integration test (`SUVIX_RUN_INTEGRATION_TESTS=1` + `GEMINI_API_KEY`).
+  - 156 tests green with the gemini extra (105 + 3 skips without it), ruff clean.
+  - Integration note: provider test modules now `importorskip` their SDK so the
+    default `--extra dev` suite stays green without optional extras.
 
 ## In progress
 
-**Milestone 3: first real provider — Gemini** (PR #4) — builder working; next to integrate.
+**Milestone 4: end-to-end Streamlit playground** (PR #5) — builder working; next to integrate.
 
 ## Next (milestones)
 
@@ -56,8 +68,8 @@ Single source of truth for where the project stands. Updated with every mileston
 |---|-----------|----|--------|
 | 1 | Core contracts + fake adapter | #2 | ✅ done 2026-10-15 |
 | 2 | Media metadata + selected-frame foundation | #3 | ✅ done 2026-10-15 |
-| 3 | First real provider: Gemini | #4 | next |
-| 4 | End-to-end Streamlit playground | #5 |
+| 3 | First real provider: Gemini | #4 | ✅ done 2026-10-15 |
+| 4 | End-to-end Streamlit playground | #5 | next |
 | 5 | Selected-frame extraction + coarse-to-fine | #6 |
 | 6 | Validation + selective recovery | #7 |
 | 7 | OpenRouter + TwelveLabs adapters | #8 |
@@ -66,6 +78,16 @@ Single source of truth for where the project stands. Updated with every mileston
 
 Full milestone definitions: [SUVIX_PLAN.md](SUVIX_PLAN.md) §22.
 Definition of done: [SUVIX_PLAN.md](SUVIX_PLAN.md) §24.
+
+## Verification evidence (PR #4 — Milestone 3)
+
+- `uv run pytest` → 156 passed, 1 skipped (gemini extra installed); 105 passed,
+  3 skipped without it (provider test modules `importorskip` their SDK).
+- `uv run ruff check src tests` → clean.
+- TDD: RED (3 collection errors) → GREEN; one real bug caught (schema property
+  names misclassified as keywords → special-cased `properties` keys).
+- `docs/providers/gemini.md`: §7.4 verification record, VERIFIED vs UNVERIFIED
+  separated. No paid API calls; integration test written but skipped (no keys here).
 
 ## Verification evidence (PR #3 — Milestone 2)
 
