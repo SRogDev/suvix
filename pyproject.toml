@@ -1,0 +1,55 @@
+[project]
+name = "suvix"
+version = "0.1.0"
+description = "Schema-guided video data extraction: turn video into accurate, validated, developer-defined structured data."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "SRogDev" }]
+keywords = ["video", "structured-extraction", "json-schema", "vision", "vlm", "benchmarking"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "pydantic>=2.7",
+    "jsonschema>=4.21",
+]
+
+[project.urls]
+Repository = "https://github.com/SRogDev/suvix"
+Issues = "https://github.com/SRogDev/suvix/issues"
+
+[project.optional-dependencies]
+# Provider adapters stay optional: the core never imports provider SDKs.
+gemini = ["google-genai>=1.20"]
+# OpenRouter is reached through its OpenAI-compatible API.
+openrouter = ["openai>=1.40"]
+twelvelabs = ["twelvelabs>=1.3"]
+playground = ["streamlit>=1.36"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/suvix"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
