@@ -5,13 +5,14 @@ developer-defined structured data: you provide a video, a JSON Schema, instructi
 and an explicitly chosen provider — Suvix handles the extraction workflow, validation,
 evidence references, and execution metadata.
 
-> **Status: Milestone 2 done (v0.1.0).** The public API (`Suvix.extract`), core
-> contracts, adapter protocol, rule-based strategy planner, local JSON Schema
-> validation, bounded recovery, and the **media layer** (ffprobe metadata, timestamp-honest
-> frame extraction, deterministic uniform sampling, segment math) are implemented and
-> tested — 105 tests, no network, no API keys. Real providers arrive in **Milestones 3/7**,
-> selected-frame extraction in **Milestone 5**. See [STATUS.md](STATUS.md) for the live
-> timeline. Nothing in this README describes behavior that does not exist yet.
+> **Status: Milestone 3 done (v0.1.0).** The public API, core contracts, media layer,
+> and the **first real provider (Gemini)** are implemented and tested — 156 tests
+> (51 for the Gemini adapter, mocked; 1 opt-in integration test requiring
+> `SUVIX_RUN_INTEGRATION_TESTS=1` and `GEMINI_API_KEY`). Provider capabilities are
+> verified against official docs, not assumed — see `docs/providers/gemini.md`.
+> OpenRouter/TwelveLabs arrive in **Milestone 7**, selected-frame extraction in
+> **Milestone 5**. See [STATUS.md](STATUS.md) for the live timeline. Nothing in this
+> README describes behavior that does not exist yet.
 
 ## What Suvix is (and is not)
 
@@ -66,6 +67,36 @@ their absence raises a clear, actionable error instead of failing obscurely.
 - `suvix.sampling.uniform_timestamps(...)` — deterministic uniform sampling.
 - `suvix.media.split_into_segments(...)` / `to_global_seconds(...)` — segment math
   with correct offset handling for the coarse-to-fine workflow (Milestone 5).
+
+## Providers
+
+| Provider | Extra | Strategies | Structured output | Verification |
+|---|---|---|---|---|
+| Gemini | `suvix[gemini]` | native video, selected frames | Verified JSON Schema subset (see below) | [`docs/providers/gemini.md`](docs/providers/gemini.md) |
+| OpenRouter | `suvix[openrouter]` | Milestone 7 | — | — |
+| TwelveLabs | `suvix[twelvelabs]` | Milestone 7 | — | — |
+
+```python
+from suvix import Suvix
+from suvix.adapters.gemini import GeminiExtractor  # needs: uv add "suvix[gemini]"
+
+extractor = GeminiExtractor()  # GEMINI_API_KEY env var
+result = await Suvix().extract(
+    video="sample.mp4",
+    schema=Extraction.model_json_schema(),
+    instructions="Identify each visible event of interest.",
+    extractor=extractor,
+)
+```
+
+Capability notes (all verified 2026-10-15 against official docs — nothing aspirational):
+- Native video via the Files API; uploaded files are deleted after each extraction
+  (auto-expiry 48h otherwise — see the provider doc for retention limits).
+- Structured output supports a documented JSON Schema subset; unsupported keywords
+  raise `UnsupportedSchemaError` naming the keyword instead of being silently dropped.
+- Evidence timestamps are `provider_reported` — Gemini does not expose which frames
+  it sampled, so Suvix does not claim frame-level verification.
+- Usage comes from the provider's `usage_metadata`; missing values stay missing.
 
 ## Developer experience (Milestone 1 — works today with the fake adapter)
 
@@ -140,6 +171,16 @@ Unit tests never require network access or provider keys. Shared adapter contrac
 tests live in `tests/contract/` — every provider adapter (M3, M7) must pass them
 against mocked SDK responses. Real-provider integration tests are opt-in (see the
 implementation plan, §17.3).
+
+Provider adapter unit tests skip cleanly when their optional extra is not
+installed:
+
+```bash
+uv sync --extra dev          # core suite; provider tests skip without their extras
+uv sync --extra dev --extra gemini --extra openrouter --extra twelvelabs --extra playground
+uv run pytest                # full suite incl. mocked adapter tests
+SUVIX_RUN_INTEGRATION_TESTS=1 GEMINI_API_KEY=... uv run pytest tests/integration
+```
 
 ## Contributing
 
