@@ -369,6 +369,7 @@ async def coarse_to_fine_extract(
     """
     # Deferred import: suvix.extraction imports this module at load time.
     from suvix.extraction import _call_adapter, _validate_extraction
+    from suvix.validation import SemanticContext
 
     duration = metadata.duration_seconds
     if duration is None:
@@ -377,6 +378,9 @@ async def coarse_to_fine_extract(
             details={"video_path": video_path},
         )
     timeout = options.per_call_timeout_seconds
+    round_context = SemanticContext(
+        video_duration_seconds=duration, frame_registry=registry
+    )
 
     warnings: list[str] = []
     usage_total: dict[str, Any] = {}
@@ -492,7 +496,7 @@ async def coarse_to_fine_extract(
             round_no,
             f"Candidate intervals: {_format_intervals(active)}.",
         )
-        _, report = _validate_extraction(out, schema)
+        _, report = _validate_extraction(out, schema, context=round_context)
         if report.valid:
             break
         # Validation failed: shrink around still-invalid evidence and retry

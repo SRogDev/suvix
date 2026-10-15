@@ -80,9 +80,24 @@ Single source of truth for where the project stands. Updated with every mileston
   - 178 tests green (19 new, all against REAL ffmpeg media — incl. a 40s clip
     for multi-round refinement), ruff clean.
 
+- **2026-10-15 — PR #7: Milestone 6 — validation + selective recovery.**
+  - `validation.py`: `SemanticContext`, `iter_time_fields`, `validate_semantics`
+    (finite/non-negative/ordered time values, duration + tolerance bounds,
+    resolvable frame refs; ranges only, never semantic truth).
+  - `evidence.py`: `validate_evidence` (duration bounds, frame resolution,
+    duplicate warnings).
+  - `recovery.py`: `classify_issues`; `is_recoverable` no longer burns budget
+    on warnings-only reports; repair instructions grouped by field with a
+    no-fabrication line.
+  - Pipeline wiring (integrator): semantic + full evidence validation run in
+    `_validate_extraction` with media context (incl. coarse-to-fine rounds);
+    `require_evidence=True` now raises `MissingEvidenceError` instead of being
+    silently ignored.
+  - 216 tests green (38 new), ruff clean.
+
 ## In progress
 
-**Milestone 6: validation + selective recovery** (PR #7) — builder done; integrating next.
+**Milestone 7: OpenRouter + TwelveLabs adapters** (PR #8) — builder done; integrating next.
 
 ## Next (milestones)
 
@@ -93,13 +108,38 @@ Single source of truth for where the project stands. Updated with every mileston
 | 3 | First real provider: Gemini | #4 | ✅ done 2026-10-15 |
 | 4 | End-to-end Streamlit playground | #5 | ✅ done 2026-10-15 |
 | 5 | Selected-frame extraction + coarse-to-fine | #6 | ✅ done 2026-10-15 |
-| 6 | Validation + selective recovery | #7 | next |
-| 7 | OpenRouter + TwelveLabs adapters | #8 |
+| 6 | Validation + selective recovery | #7 | ✅ done 2026-10-15 |
+| 7 | OpenRouter + TwelveLabs adapters | #8 | next |
 | 8 | Benchmark suite | #9 |
 | 9 | Release readiness | #10 |
 
 Full milestone definitions: [SUVIX_PLAN.md](SUVIX_PLAN.md) §22.
 Definition of done: [SUVIX_PLAN.md](SUVIX_PLAN.md) §24.
+
+## Verification evidence (PR #7 — Milestone 6)
+
+- `uv run pytest` → 216 passed, 1 skipped (178 baseline + 38 new: 36 builder
+  unit tests + 2 integrator `require_evidence` pipeline tests).
+- `uv run ruff check src tests` → clean.
+- TDD: RED (collection ImportErrors on the new names) → GREEN, no regressions.
+- Wiring verified: semantic/out-of-range evidence issues now fail validation
+  and can trigger bounded recovery; warnings-only reports skip recovery.
+
+## Verification evidence (PR #6 — Milestone 5)
+
+- `uv run pytest` → 178 passed, 1 skipped (159 baseline + 19 new, all against
+  REAL ffmpeg media: 4s clip for single-pass, module-scoped 40s clip for
+  multi-round coarse-to-fine).
+- `uv run ruff check src tests` → clean.
+- Builder's stub-based tests were rewritten for real media at integration.
+
+## Verification evidence (PR #5 — Milestone 4)
+
+- `uv run pytest` → 159 passed, 1 skipped; `ruff check src tests playground`
+  → clean.
+- Headless AppTest (integrator): clean boot, provider discovery (fake + gemini
+  lit, others honestly "not installed"), full fake-adapter run → 5 tabs, valid
+  data, validation passed, stages recorded.
 
 ## Verification evidence (PR #4 — Milestone 3)
 

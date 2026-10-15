@@ -5,11 +5,11 @@ developer-defined structured data: you provide a video, a JSON Schema, instructi
 and an explicitly chosen provider — Suvix handles the extraction workflow, validation,
 evidence references, and execution metadata.
 
-> **Status: Milestone 5 done (v0.1.0).** The public API, core contracts, media layer,
-> **selected-frame extraction with bounded coarse-to-fine refinement**, the first
-> real provider (Gemini), and a local Streamlit playground are implemented and
-> tested — 178 tests. OpenRouter/TwelveLabs arrive in **Milestone 7**. Provider
-> capabilities are verified against official docs — see `docs/providers/`.
+> **Status: Milestone 6 done (v0.1.0).** The public API, core contracts, media layer,
+> selected-frame extraction with bounded coarse-to-fine, **full validation
+> (structural + deterministic semantic + evidence) and selective recovery**,
+> the first real provider (Gemini), and a local Streamlit playground are
+> implemented and tested — 216 tests. OpenRouter/TwelveLabs arrive in **Milestone 7**.
 > See [STATUS.md](STATUS.md) for the live timeline. Nothing in this README describes
 > behavior that does not exist yet.
 
@@ -175,6 +175,24 @@ print(result.usage)             # provider-reported usage and cost estimates
   into your data) followed by fine rounds that sample densely inside the expanded
   intervals. Total frames across all rounds never exceed `max_frames`. It is not
   exhaustive: the coarse pass can miss brief events, and the docs say so.
+
+## Validation and recovery
+
+Every extraction is validated **locally** — a provider's claim of structured output
+never replaces it:
+
+- **Structural** — the output must match your JSON Schema (Draft 2020-12).
+- **Semantic (deterministic)** — time values must be finite, non-negative, ordered,
+  and within the video duration (+ tolerance); `frame` references must resolve in
+  the execution's frame registry. Code checks ranges, not whether the model truly
+  saw the event.
+- **Evidence** — timestamps within duration, frame ids verified, duplicates flagged.
+
+When validation fails and recovery is enabled, Suvix makes a bounded number of
+targeted repair calls (same provider, same model, same strategy — never a silent
+switch), each naming the concrete issues. Exhaust the budget and you get a clear
+`RecoveryExhaustedError`, never a silent empty result. `require_evidence=True`
+rejects extractions that produce no evidence references.
 
 No strategy is assumed cheaper or more accurate. The **benchmark suite (Milestone 8)**
 measures correctness, schema compliance, timestamp accuracy, latency, and cost per

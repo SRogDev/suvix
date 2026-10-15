@@ -11,6 +11,7 @@ from suvix.adapters.fake import FakeExtractor
 from suvix.errors import (
     InvalidInputError,
     MalformedOutputError,
+    MissingEvidenceError,
     ProviderRequestError,
     RecoveryExhaustedError,
     SchemaValidationError,
@@ -185,3 +186,23 @@ async def test_cancellation_is_not_converted_to_empty_result():
     with pytest.raises(asyncio.CancelledError):
         await task
     assert fake.calls == []  # the hanging call never completed; nothing fabricated
+
+
+async def test_require_evidence_raises_when_none_produced():
+    fake = FakeExtractor(script=[{"data": GOOD}])  # no evidence refs
+    with pytest.raises(MissingEvidenceError):
+        await Suvix().extract(
+            video="clip.mp4", schema=SCHEMA, instructions="x", extractor=fake,
+            options=ExtractionOptions(require_evidence=True))
+
+
+async def test_require_evidence_passes_when_evidence_present():
+    fake = FakeExtractor(script=[{
+        "data": GOOD,
+        "evidence": [{"timestamp_seconds": 1.5, "ref_type": "provider_reported"}],
+    }])
+    result = await Suvix().extract(
+        video="clip.mp4", schema=SCHEMA, instructions="x", extractor=fake,
+        options=ExtractionOptions(require_evidence=True))
+    assert result.validation.valid is True
+    assert len(result.evidence) == 1
