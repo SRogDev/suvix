@@ -114,9 +114,29 @@ Single source of truth for where the project stands. Updated with every mileston
     by integrator), ruff clean. No paid API calls; integration tests opt-in
     and skipped (no keys on this machine).
 
+- **2026-10-15 — PR #9: Milestone 8 — benchmark suite.**
+  - `src/suvix/evaluation/`: 15 pure metric functions (`metrics.py`; rates are
+    `float | None`, never zeroed), baseline runner (`runner.py`: A–E, §16.2),
+    pricing registry (`cost.py`: empty by design — no invented prices).
+  - Baselines C/D/E wired for real at integration (builder shipped them as
+    "unavailable" placeholders): C = single-pass selected frames
+    (`max_refinement_rounds=0`, isolated from D), D = coarse-to-fine
+    (`max_refinement_rounds=2`), E = locally sampled frames submitted directly
+    to the adapter (image-input mirror of A; honest skip without image input).
+    `_run_a`'s measurement tail factored into a shared `_wrap_direct_extraction`.
+  - `benchmarks/tasks/*.json` (3 hand-annotated tasks), `benchmarks/fixtures/`
+    `generate.py` (videos gitignored; sha256-verified reproducibility),
+    `docs/benchmarking.md`.
+  - Integrator smoke run (real generated fixture, scripted fakes): all 5
+    baselines green — A:1req/0f, B:1req/0f, C:1req/2f, D:2req/5f, E:1req/2f;
+    f1=1.0 everywhere (perfect fakes validate the harness, not providers).
+    This caught a real confound: C initially inherited the default
+    `max_refinement_rounds=2`, making it identical to D — fixed and pinned.
+  - 343 tests green (69 new), ruff clean.
+
 ## In progress
 
-**Milestone 8: benchmark suite** (PR #9) — builder done; integrating next (merges last).
+**Milestone 9: release readiness** (PR #10) — final pass next.
 
 ## Next (milestones)
 
@@ -129,11 +149,23 @@ Single source of truth for where the project stands. Updated with every mileston
 | 5 | Selected-frame extraction + coarse-to-fine | #6 | ✅ done 2026-10-15 |
 | 6 | Validation + selective recovery | #7 | ✅ done 2026-10-15 |
 | 7 | OpenRouter + TwelveLabs adapters | #8 | ✅ done 2026-10-15 |
-| 8 | Benchmark suite | #9 | next |
-| 9 | Release readiness | #10 |
+| 8 | Benchmark suite | #9 | ✅ done 2026-10-15 |
+| 9 | Release readiness | #10 | next |
 
 Full milestone definitions: [SUVIX_PLAN.md](SUVIX_PLAN.md) §22.
 Definition of done: [SUVIX_PLAN.md](SUVIX_PLAN.md) §24.
+
+## Verification evidence (PR #9 — Milestone 8)
+
+- `uv run pytest` → 343 passed, 3 skipped (274 baseline + 69 new: metrics +
+  runner; skips are the 3 opt-in provider integration tests).
+- `uv run ruff check src tests` → clean.
+- Builder's tests: metrics suite copied as-is (pure functions); C/D/E
+  "unavailable" tests rewritten for real behavior (real 40s clip fixture).
+- Integrator end-to-end smoke (real generated fixtures, scripted fakes):
+  A–E all green with differentiated request/frame counts (see Done entry).
+- Fixture reproducibility: regenerated `temporal_flashes.mp4` sha256 matches
+  the task JSON's recorded hash.
 
 ## Verification evidence (PR #8 — Milestone 7)
 

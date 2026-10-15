@@ -5,11 +5,12 @@ developer-defined structured data: you provide a video, a JSON Schema, instructi
 and an explicitly chosen provider — Suvix handles the extraction workflow, validation,
 evidence references, and execution metadata.
 
-> **Status: Milestone 7 done (v0.1.0).** The public API, core contracts, media layer,
+> **Status: Milestone 8 done (v0.1.0).** The public API, core contracts, media layer,
 > selected-frame extraction with bounded coarse-to-fine, full validation and
-> selective recovery, **three real providers (Gemini, OpenRouter, TwelveLabs)**,
-> and a local Streamlit playground are implemented and tested — 274 tests.
-> All provider capabilities are verified against official docs — see `docs/providers/`.
+> selective recovery, three real providers (Gemini, OpenRouter, TwelveLabs),
+> a local Streamlit playground, and the **benchmark suite (baselines A–E)** are
+> implemented and tested — 343 tests. All provider capabilities are verified
+> against official docs — see `docs/providers/`.
 > See [STATUS.md](STATUS.md) for the live timeline. Nothing in this README describes
 > behavior that does not exist yet.
 
@@ -194,9 +195,12 @@ switch), each naming the concrete issues. Exhaust the budget and you get a clear
 `RecoveryExhaustedError`, never a silent empty result. `require_evidence=True`
 rejects extractions that produce no evidence references.
 
-No strategy is assumed cheaper or more accurate. The **benchmark suite (Milestone 8)**
-measures correctness, schema compliance, timestamp accuracy, latency, and cost per
-strategy against direct-provider baselines, and negative results are reported.
+No strategy is assumed cheaper or more accurate. The **benchmark suite**
+(`suvix.evaluation`, `benchmarks/`) measures correctness, schema compliance,
+timestamp accuracy, latency, and cost per strategy against direct-provider
+baselines — see [docs/benchmarking.md](docs/benchmarking.md). No verified
+provider prices are bundled, so cost figures stay unavailable until you register
+your own pricing. Negative results are retained and reported.
 
 ## Documentation
 
