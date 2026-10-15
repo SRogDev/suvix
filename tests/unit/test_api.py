@@ -1,6 +1,8 @@
 """End-to-end pipeline through the fake adapter: success, invalid schema,
-provider error, validation failure, bounded recovery, and the documented
-selected-frames gap (Milestone 5)."""
+provider error, validation failure, bounded recovery, and the selected-frames
+strategy (Milestone 5)."""
+
+import shutil
 
 import pytest
 
@@ -13,7 +15,6 @@ from suvix.errors import (
     RecoveryExhaustedError,
     SchemaValidationError,
     UnsupportedSchemaError,
-    UnsupportedStrategyError,
 )
 from suvix.options import ExtractionOptions
 
@@ -134,13 +135,22 @@ async def test_malformed_output_with_zero_budget_raises_malformed_error():
                                       enable_recovery=False))
 
 
-async def test_selected_frames_strategy_documents_milestone_gap():
-    fake = FakeExtractor()
-    with pytest.raises(UnsupportedStrategyError) as exc:
-        await Suvix().extract(
-            video="clip.mp4", schema=SCHEMA, instructions="x", extractor=fake,
-            options=ExtractionOptions(strategy="selected_frames"))
-    assert "Milestone 5" in str(exc.value)
+@pytest.mark.skipif(
+    shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None,
+    reason="ffmpeg/ffprobe binaries not available",
+)
+async def test_selected_frames_strategy_is_implemented(clip_path):
+    # Milestone 5: the selected-frames branch is live against the real M2
+    # media layer (ffmpeg-generated clip fixture).
+    fake = FakeExtractor(script=[{"data": GOOD}])
+    result = await Suvix().extract(
+        video=clip_path, schema=SCHEMA, instructions="x", extractor=fake,
+        options=ExtractionOptions(strategy="selected_frames",
+                                  max_refinement_rounds=0))
+    assert result.execution.strategy == "selected_frames"
+    assert result.data == GOOD
+    assert result.usage.sampled_frames > 0
+    assert result.usage.video_duration_seconds == pytest.approx(4.0, abs=0.2)
 
 
 async def test_empty_instructions_rejected():

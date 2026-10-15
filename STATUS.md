@@ -67,9 +67,22 @@ Single source of truth for where the project stands. Updated with every mileston
   - Headless AppTest verified: boot, provider discovery, full fake-adapter run
     (valid data, 5 tabs, validation passed). 159 tests green, ruff clean.
 
+- **2026-10-15 — PR #6: Milestone 5 — selected-frame extraction + coarse-to-fine.**
+  - `src/suvix/extraction.py`: real `selected_frames` branch — `inspect_video`
+    → bounded `uniform_timestamps` → `extract_frames_at` with a `FrameRegistry`
+    → single pass or bounded coarse-to-fine; provider frame-ids validated
+    against the registry (unknown → dropped + warning); shared `_finalize`
+    tail (native path behavior unchanged).
+  - `src/suvix/sampling/coarse_to_fine.py`: one coarse pass (internal
+    `COARSE_SCHEMA`, never leaked) + up to `max_refinement_rounds` fine rounds;
+    interval validation/expansion/merging, no re-sampling, total frames ≤
+    `max_frames`; documented non-exhaustiveness.
+  - 178 tests green (19 new, all against REAL ffmpeg media — incl. a 40s clip
+    for multi-round refinement), ruff clean.
+
 ## In progress
 
-**Milestone 5: selected-frame extraction + coarse-to-fine** (PR #6) — builder done; integrating next.
+**Milestone 6: validation + selective recovery** (PR #7) — builder done; integrating next.
 
 ## Next (milestones)
 
@@ -79,8 +92,8 @@ Single source of truth for where the project stands. Updated with every mileston
 | 2 | Media metadata + selected-frame foundation | #3 | ✅ done 2026-10-15 |
 | 3 | First real provider: Gemini | #4 | ✅ done 2026-10-15 |
 | 4 | End-to-end Streamlit playground | #5 | ✅ done 2026-10-15 |
-| 5 | Selected-frame extraction + coarse-to-fine | #6 | next |
-| 6 | Validation + selective recovery | #7 |
+| 5 | Selected-frame extraction + coarse-to-fine | #6 | ✅ done 2026-10-15 |
+| 6 | Validation + selective recovery | #7 | next |
 | 7 | OpenRouter + TwelveLabs adapters | #8 |
 | 8 | Benchmark suite | #9 |
 | 9 | Release readiness | #10 |

@@ -5,13 +5,13 @@ developer-defined structured data: you provide a video, a JSON Schema, instructi
 and an explicitly chosen provider — Suvix handles the extraction workflow, validation,
 evidence references, and execution metadata.
 
-> **Status: Milestone 4 done (v0.1.0).** The public API, core contracts, media layer,
-> the **first real provider (Gemini)**, and a **local Streamlit playground** are
-> implemented and tested — 159 tests. Provider capabilities are verified against
-> official docs — see `docs/providers/gemini.md`. OpenRouter/TwelveLabs arrive in
-> **Milestone 7**, selected-frame extraction in **Milestone 5**. See [STATUS.md](STATUS.md)
-> for the live timeline. Nothing in this README describes behavior that does not
-> exist yet.
+> **Status: Milestone 5 done (v0.1.0).** The public API, core contracts, media layer,
+> **selected-frame extraction with bounded coarse-to-fine refinement**, the first
+> real provider (Gemini), and a local Streamlit playground are implemented and
+> tested — 178 tests. OpenRouter/TwelveLabs arrive in **Milestone 7**. Provider
+> capabilities are verified against official docs — see `docs/providers/`.
+> See [STATUS.md](STATUS.md) for the live timeline. Nothing in this README describes
+> behavior that does not exist yet.
 
 ## What Suvix is (and is not)
 
@@ -163,12 +163,18 @@ print(result.usage)             # provider-reported usage and cost estimates
 ## Extraction strategies
 
 - **native_video** — send the video through the provider's native video interface.
-- **selected_frames** — planned for Milestone 5. Requesting it today raises a
-  documented `UnsupportedStrategyError`; Suvix will not silently substitute another
-  strategy.
+- **selected_frames** — Suvix inspects the video, samples a bounded set of frames
+  with explicit timestamps (presentation timestamps parsed from the container when
+  possible), and sends them to the adapter. Provider-referenced frame ids are
+  validated against the local frame registry; unknown ids are dropped with a warning,
+  never fabricated.
 - **auto** — a small, explainable, rule-based planner picks between them (no LLM call,
   no silent provider switching; the choice and its reason are recorded in the result).
-- **coarse-to-fine** (Milestone 5) — bounded refinement over candidate intervals.
+- **coarse-to-fine** — when `max_refinement_rounds > 0`, a bounded workflow runs one
+  coarse pass (candidate intervals under an internal planning schema, never leaked
+  into your data) followed by fine rounds that sample densely inside the expanded
+  intervals. Total frames across all rounds never exceed `max_frames`. It is not
+  exhaustive: the coarse pass can miss brief events, and the docs say so.
 
 No strategy is assumed cheaper or more accurate. The **benchmark suite (Milestone 8)**
 measures correctness, schema compliance, timestamp accuracy, latency, and cost per

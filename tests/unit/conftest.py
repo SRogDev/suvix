@@ -39,6 +39,13 @@ def clip_path(tmp_path: Path) -> Path:
     return make_test_clip(tmp_path / "clip.mp4")
 
 
+@pytest.fixture(scope="module")
+def long_clip_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A 40s, 320x240, 30fps CFR clip (module-scoped: generation is slow)."""
+    return make_test_clip(tmp_path_factory.mktemp("media") / "long.mp4",
+                          duration=40.0)
+
+
 @pytest.fixture()
 def clip_with_audio_path(tmp_path: Path) -> Path:
     """A 4s clip with a sine-wave audio track."""
