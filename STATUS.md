@@ -26,17 +26,37 @@ Single source of truth for where the project stands. Updated with every mileston
   - `SUVIX_PLAN.md` — the full implementation specification (source of truth).
   - `tests/test_import.py` — foundation test (TDD RED→GREEN evidence below).
 
+- **2026-10-15 — PR #2: Milestone 1 — core contracts + fake adapter.**
+  - `src/suvix/`: `api.py` (`Suvix.extract`), `contracts.py` (ExtractionResult /
+    EvidenceRef / ValidationReport / UsageReport / ExecutionMetadata),
+    `options.py` (ExtractionOptions, conservative defaults), `errors.py`
+    (SuvixError hierarchy), `planner.py` (rule-based auto strategy planner),
+    `extraction.py` (pipeline), `validation.py` (Draft 2020-12 local validation),
+    `recovery.py` (bounded repair, same extractor/model/strategy), `evidence.py`
+    (timestamp sanity), `usage.py`, `pricing.py`, `adapters/base.py`
+    (VideoExtractor Protocol + ExtractorCapabilities), `adapters/fake.py`
+    (scripted offline test double).
+  - `docs/architecture.md` — pipeline + dependency boundaries as built.
+  - 60 tests green, ruff clean; README example executed against the fake adapter.
+
+- **2026-10-15 — PR #3: Milestone 2 — media metadata + selected-frame foundation.**
+  - `src/suvix/media/`: `metadata.py` (`inspect_video` via ffprobe),
+    `frames.py` (`extract_frames_at`, `SampledFrame`, `FrameRegistry`,
+    PTS-honest timestamps), `segments.py` (segment math + offsets).
+  - `src/suvix/sampling/`: `uniform.py` (deterministic), `base.py` (Sampler protocol).
+  - 105 tests green (incl. real VFR clip test), ruff clean.
+
 ## In progress
 
-Nothing yet — next is **Milestone 1: core contracts + fake adapter** (PR #2).
+**Milestone 3: first real provider — Gemini** (PR #4) — builder working; next to integrate.
 
 ## Next (milestones)
 
 | # | Milestone | PR | Status |
 |---|-----------|----|--------|
 | 1 | Core contracts + fake adapter | #2 | ✅ done 2026-10-15 |
-| 2 | Media metadata + selected-frame foundation | #3 | next |
-| 3 | First real provider: Gemini | #4 |
+| 2 | Media metadata + selected-frame foundation | #3 | ✅ done 2026-10-15 |
+| 3 | First real provider: Gemini | #4 | next |
 | 4 | End-to-end Streamlit playground | #5 |
 | 5 | Selected-frame extraction + coarse-to-fine | #6 |
 | 6 | Validation + selective recovery | #7 |
@@ -46,6 +66,16 @@ Nothing yet — next is **Milestone 1: core contracts + fake adapter** (PR #2).
 
 Full milestone definitions: [SUVIX_PLAN.md](SUVIX_PLAN.md) §22.
 Definition of done: [SUVIX_PLAN.md](SUVIX_PLAN.md) §24.
+
+## Verification evidence (PR #3 — Milestone 2)
+
+- `uv run pytest` → 105 passed (60 baseline + 45 new), incl. a real VFR clip test
+  (2s@30fps + 2s@10fps; container claims 30fps; parsed PTS asserted at t=2.5).
+- `uv run ruff check src tests` → clean.
+- ffmpeg/ffprobe-dependent tests skip cleanly when the binaries are absent.
+- TDD evidence per builder: RED (collection errors) → GREEN; one real behavioral
+  failure root-caused (`-v error` suppresses showinfo; fixed with `-copyts`).
+- No network, no API keys. No scene-change sampling, no remote URLs, no caching.
 
 ## Verification evidence (PR #2 — Milestone 1)
 
