@@ -5,10 +5,12 @@ developer-defined structured data: you provide a video, a JSON Schema, instructi
 and an explicitly chosen provider — Suvix handles the extraction workflow, validation,
 evidence references, and execution metadata.
 
-> **Status: foundation (v0.1.0).** The repository scaffolding, packaging, and working
-> docs are in place. The public extraction API (`Suvix.extract`) arrives in
-> **Milestone 1** and providers in **Milestones 3/7**. See [STATUS.md](STATUS.md) for
-> the live timeline. Nothing in this README describes behavior that does not exist yet.
+> **Status: Milestone 1 done (v0.1.0).** The public API (`Suvix.extract`), core
+> contracts, adapter protocol, rule-based strategy planner, local JSON Schema
+> validation, and bounded recovery are implemented and tested with a deterministic
+> fake adapter — no network, no API keys. Real providers arrive in **Milestones 3/7**,
+> media/frame support in **Milestones 2/5**. See [STATUS.md](STATUS.md) for the live
+> timeline. Nothing in this README describes behavior that does not exist yet.
 
 ## What Suvix is (and is not)
 
@@ -48,15 +50,18 @@ uv add "suvix[gemini]"
 Provider SDKs are optional extras (`gemini`, `openrouter`, `twelvelabs`); the core
 never imports them. The local Streamlit playground is another optional extra (`playground`).
 
-## Target developer experience
+## Developer experience (Milestone 1 — works today with the fake adapter)
 
-This is the API the milestones are converging on (Milestone 1 implements it):
+The public API is implemented. Real provider adapters land in Milestones 3/7;
+until then, `suvix.adapters.fake.FakeExtractor` exercises the whole pipeline
+offline with scripted responses:
 
 ```python
+import asyncio
 from pydantic import BaseModel
 
 from suvix import Suvix
-from suvix.adapters.gemini import GeminiExtractor
+from suvix.adapters.fake import FakeExtractor  # offline stand-in; real adapters in M3/M7
 
 
 class Event(BaseModel):
@@ -69,15 +74,16 @@ class Extraction(BaseModel):
     events: list[Event]
 
 
-extractor = GeminiExtractor()
+extractor = FakeExtractor(script=[{"data": {"events": [
+    {"timestamp_seconds": 1.5, "event_type": "goal", "evidence": "crowd roars"}]}}])
 suvix = Suvix()
 
-result = await suvix.extract(
+result = asyncio.run(suvix.extract(
     video="sample.mp4",
     schema=Extraction.model_json_schema(),
     instructions="Identify each visible event of interest.",
     extractor=extractor,
-)
+))
 
 print(result.data)              # schema-validated extracted data
 print(result.evidence)          # traceable timestamps / frame references
@@ -88,7 +94,9 @@ print(result.usage)             # provider-reported usage and cost estimates
 ## Extraction strategies
 
 - **native_video** — send the video through the provider's native video interface.
-- **selected_frames** — Suvix samples a bounded set of frames with explicit timestamps.
+- **selected_frames** — planned for Milestone 5. Requesting it today raises a
+  documented `UnsupportedStrategyError`; Suvix will not silently substitute another
+  strategy.
 - **auto** — a small, explainable, rule-based planner picks between them (no LLM call,
   no silent provider switching; the choice and its reason are recorded in the result).
 - **coarse-to-fine** (Milestone 5) — bounded refinement over candidate intervals.
@@ -111,8 +119,10 @@ uv sync --extra dev
 uv run pytest
 ```
 
-Unit tests never require network access or provider keys. Real-provider integration
-tests are opt-in (see the implementation plan, §17.3).
+Unit tests never require network access or provider keys. Shared adapter contract
+tests live in `tests/contract/` — every provider adapter (M3, M7) must pass them
+against mocked SDK responses. Real-provider integration tests are opt-in (see the
+implementation plan, §17.3).
 
 ## Contributing
 
