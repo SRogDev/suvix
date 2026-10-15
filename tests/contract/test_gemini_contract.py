@@ -17,11 +17,11 @@ pytest.importorskip("google.genai", reason="gemini extra not installed")
 import httpx
 from google.genai import types as real_types
 from google.genai.errors import APIError
-from test_adapter_contract import AdapterContractTests
 
 from suvix.adapters.base import AdapterRequest, ProviderExtraction, VideoExtractor
 from suvix.adapters.gemini import GeminiExtractor
 from suvix.options import ExtractionOptions
+from tests.contract.test_adapter_contract import AdapterContractTests
 
 
 def _fake_sdk():

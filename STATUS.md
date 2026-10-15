@@ -95,9 +95,28 @@ Single source of truth for where the project stands. Updated with every mileston
     silently ignored.
   - 216 tests green (38 new), ruff clean.
 
+- **2026-10-15 — PR #8: Milestone 7 — OpenRouter + TwelveLabs adapters.**
+  - `adapters/openrouter.py`: `OpenRouterExtractor` (model required, explicit;
+    `selected_frames` only — native video refused loudly since support varies
+    per endpoint behind the gateway); frames as `image_url` data URIs;
+    strict `response_format` json_schema + `require_parameters` routing;
+    evidence = one `frame` ref per sent frame; usage incl. `cost` as reported;
+    key redaction in error mapping.
+  - `adapters/twelvelabs.py`: `TwelveLabsExtractor` (native video + selected
+    frames): upload → bounded poll until `ready` → sync analyze (Pegasus) with
+    `json_schema` response format → asset deleted in `finally`; image path
+    ≤20 images, Pegasus 1.6 enforced; evidence honestly `provider_reported`;
+    `structured_output=True` verified in SDK 1.3.6 (better than the plan's
+    expectation).
+  - `docs/providers/openrouter.md`, `docs/providers/twelvelabs.md`: §7.4
+    verification records (doc URLs, SDK versions, VERIFIED vs UNVERIFIED).
+  - 274 tests green (58 new, all SDK-mocked; 2 integrator env-robustness fixes
+    by integrator), ruff clean. No paid API calls; integration tests opt-in
+    and skipped (no keys on this machine).
+
 ## In progress
 
-**Milestone 7: OpenRouter + TwelveLabs adapters** (PR #8) — builder done; integrating next.
+**Milestone 8: benchmark suite** (PR #9) — builder done; integrating next (merges last).
 
 ## Next (milestones)
 
@@ -109,12 +128,26 @@ Single source of truth for where the project stands. Updated with every mileston
 | 4 | End-to-end Streamlit playground | #5 | ✅ done 2026-10-15 |
 | 5 | Selected-frame extraction + coarse-to-fine | #6 | ✅ done 2026-10-15 |
 | 6 | Validation + selective recovery | #7 | ✅ done 2026-10-15 |
-| 7 | OpenRouter + TwelveLabs adapters | #8 | next |
-| 8 | Benchmark suite | #9 |
+| 7 | OpenRouter + TwelveLabs adapters | #8 | ✅ done 2026-10-15 |
+| 8 | Benchmark suite | #9 | next |
 | 9 | Release readiness | #10 |
 
 Full milestone definitions: [SUVIX_PLAN.md](SUVIX_PLAN.md) §22.
 Definition of done: [SUVIX_PLAN.md](SUVIX_PLAN.md) §24.
+
+## Verification evidence (PR #8 — Milestone 7)
+
+- `uv run pytest` → 274 passed, 3 skipped (216 baseline + 58 new; skips are the
+  three opt-in provider integration tests — no keys on this machine, no paid
+  calls made).
+- `uv run ruff check src tests` → clean (2 import-sort issues fixed at integration).
+- Integrator fixes: the two `test_missing_api_key_raises_config_error` tests now
+  patch the fake SDK first — the adapter checks the SDK before the key, so on a
+  bare env (no optional SDKs) the missing-SDK error fired instead of the
+  missing-key error. Same adapter behavior, deterministic tests.
+- Test-import convention: `tests/` is now a package (`__init__.py` per dir);
+  existing bare cross-test imports converted to `tests.unit.*` / `tests.contract.*`.
+- §7.4 provider records verified in `docs/providers/{openrouter,twelvelabs}.md`.
 
 ## Verification evidence (PR #7 — Milestone 6)
 
