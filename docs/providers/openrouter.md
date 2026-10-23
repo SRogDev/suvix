@@ -1,10 +1,34 @@
 # OpenRouter — §7.4 provider verification record
 
-**Verification date:** 2026-10-15
+**Verification date:** 2026-10-15 (usage/cost semantics re-verified
+2026-10-23 — see "Re-verification 2026-10-23" below)
 **Adapter:** `src/suvix/adapters/openrouter.py` (`OpenRouterExtractor`)
 **SDK verified:** `openai` 3.31.0 (repo extra `suvix[openrouter]` pins `openai>=1.40`; the
 OpenAI-compatible client is the documented way to reach OpenRouter)
 **Status of this record:** treat as time-sensitive; re-verify before M8 benchmarks.
+
+## Re-verification 2026-10-23
+
+Source: https://openrouter.ai/docs/cookbook/administration/usage-accounting
+(fetched 2026-10-23; the page's own stamp reads "Updated: 2026-10-23"):
+
+- **Usage is always returned** with every response — no opt-in parameter;
+  the old `usage: {include: true}` / `stream_options.include_usage`
+  parameters are deprecated and have no effect (VERIFIED 2026-10-23).
+- **`usage.cost` is the total amount charged to your account** when it is
+  returned — i.e. actual charges, not an estimate; the breakdown field
+  `usage.cost_details.upstream_inference_cost` is the actual cost charged
+  by the upstream provider (VERIFIED 2026-10-23). The adapter maps `cost`
+  verbatim when present and never derives it.
+- **Video support stays per-model / runtime-checked:** no blanket video
+  claim is made. Whether a given model/endpoint accepts video is
+  determined per endpoint at runtime (check the model's Providers
+  section before relying on it); the adapter still refuses
+  `native_video` (see UNVERIFIED below) (re-confirmed 2026-10-23).
+- **SDK version:** a claim that the latest `openai` SDK is 2.32.0 could
+  NOT be confirmed on 2026-10-23 and contradicts this repo's `uv.lock`,
+  which resolves `openai` **3.31.0** — the 2.32.0 figure is therefore
+  recorded as **UNVERIFIED** and the lockfile version stands.
 
 ## Official documentation (verified live 2026-10-15)
 
@@ -40,7 +64,9 @@ OpenAI-compatible client is the documented way to reach OpenRouter)
   allowed per request **varies by provider and model** (no universal documented limit).
 - **Usage reporting:** verified. Every non-streaming response includes `usage` with
   `prompt_tokens`, `completion_tokens`, `total_tokens` — "token counts are calculated
-  using the model's native tokenizer" (i.e. **not estimates**), plus `cost` in credits.
+  using the model's native tokenizer" (i.e. **not estimates**), plus `cost` —
+  the total amount charged to the account (semantics re-verified
+  2026-10-23; see "Re-verification 2026-10-23").
   The adapter maps these four fields when present. Async reconciliation via
   `GET /api/v1/generation?id=<generation-id>` exists but is not used by the adapter.
 - **Error semantics:** HTTP 429 on rate limit (mapped to `RateLimitError`); other

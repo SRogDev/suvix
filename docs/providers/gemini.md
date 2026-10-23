@@ -1,6 +1,7 @@
 # Gemini provider — verification record (§7.4)
 
-**Verification date:** 2026-10-15
+**Verification date:** 2026-10-15 (pricing, video tokenization, and Files API
+limits re-verified 2026-10-23 — see "Re-verification 2026-10-23" below)
 **Verified by:** Agent D (Suvix Milestone 3)
 **SDK verified:** `google-genai` **2.31.0** (`from google import genai`; `genai.Client(api_key=...)`)
 **Adapter:** `src/suvix/adapters/gemini.py` (`GeminiExtractor`)
@@ -13,6 +14,7 @@ Nothing in `ExtractorCapabilities` goes beyond VERIFIED items.
 
 - Structured output: https://ai.google.dev/gemini-api/docs/structured-output
   (page last updated 2026-10-13 UTC per page footer — very fresh)
+- Pricing: https://ai.google.dev/gemini-api/docs/pricing
 - Video understanding: https://ai.google.dev/gemini-api/docs/video-understanding
 - Files API: https://ai.google.dev/gemini-api/docs/files
 - Image understanding (multi-image): https://ai.google.dev/gemini-api/docs/vision
@@ -26,6 +28,51 @@ names it, it remains fully supported, and the Interactions page itself lists
 features that exist in `generateContent` but not (yet) in Interactions
 (Batch API, Python automatic function calling, explicit caching, safety
 settings). If Google deprecates `generateContent`, revisit.
+
+## Re-verification 2026-10-23 (pricing, tokenization, Files API)
+
+Source for every figure in this section: https://ai.google.dev/gemini-api/docs/pricing
+(pricing), https://ai.google.dev/gemini-api/docs/video-understanding
+(tokenization), https://ai.google.dev/gemini-api/docs/files (Files API) —
+all fetched and verified 2026-10-23. These figures supersede any older
+recorded prices.
+
+### Pricing (VERIFIED 2026-10-23) — paid tier, Standard, per 1M tokens (USD)
+
+| Model | Input | Output |
+|---|---|---|
+| `gemini-2.5-flash` | $0.30 (text/image/video); $1.00 (audio) | $2.50 |
+| `gemini-2.5-pro` | $1.25 (prompts ≤ 200k tokens); $2.50 (> 200k) | $10.00 (≤ 200k); $15.00 (> 200k) |
+| `gemini-2.5-flash-lite` | $0.10 (text/image/video); $0.30 (audio) | $0.40 |
+
+- The prices recorded earlier in this project ($0.15/$0.60 for Flash,
+  $1.25/$5.00 flat for Pro) are **stale** — do not use them.
+- `suvix.evaluation.cost.load_verified_pricing_snapshot()` registers the
+  text/image/video rates above (per-1k conversions: Flash 0.0003/0.0025,
+  Pro 0.00125/0.01, Flash-Lite 0.0001/0.0004). **Tier limitation:** the
+  flat per-1k table can only hold the Pro ≤200k tier — estimates above
+  200k prompt tokens understate Pro cost. Audio input rates are likewise
+  not represented in the flat table.
+
+### Video tokenization (VERIFIED 2026-10-23)
+
+Static mode (video-understanding doc, page last updated 2026-10-13 UTC):
+frames are sampled at 1 FPS and tokenized at **258 tokens per frame** at
+default resolution, or **66 tokens per frame** when `media_resolution`
+is low; audio is 32 tokens/second. Totals: ~300 tokens/second of video
+at high resolution, ~100 tokens/second at default (low) media
+resolution.
+
+### Files API (re-confirmed VERIFIED 2026-10-23)
+
+- **20 GB of files per project, per-file maximum 2 GB** (Files API doc);
+  files are stored for 48 hours. (The video-understanding doc's input
+  table refines the per-file limit by tier: 20 GB paid / 2 GB free.)
+- The docs state files are automatically deleted after 48 hours and
+  offer a manual `files.delete` call, but they give **no deletion
+  guarantee** — nothing promises when a deletion actually purges the
+  data. Suvix therefore claims only that it *requests* deletion (see
+  "File retention and deletion" below), never that deletion is proven.
 
 ## Supported input modes (VERIFIED)
 
@@ -101,7 +148,9 @@ schema — **not** semantically correct values; suvix always validates locally.
 
 ## File retention and deletion (VERIFIED)
 
-- Files are **automatically deleted after 48 hours** (Files API doc).
+- Files are **automatically deleted after 48 hours** (Files API doc;
+  re-confirmed 2026-10-23). The docs give **no deletion guarantee**
+  about purge timing — see "Re-verification 2026-10-23".
 - Documented manual deletion: `client.files.delete(name=myfile.name)`
   (Python). The adapter calls this in a `finally` block after every
   native-video extraction — on success, on provider failure, and on timeout.
