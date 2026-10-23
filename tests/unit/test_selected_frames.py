@@ -259,3 +259,45 @@ async def test_recovery_exhausted_raises_schema_validation_error(clip_path):
             options=ExtractionOptions(max_refinement_rounds=0,
                                       max_recovery_attempts=0,
                                       enable_recovery=False))
+
+
+def _make_cut_clip(path):
+    """8s clip with hard cuts at 2.0s and 5.0s (red / lime / blue)."""
+    import subprocess
+
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-v", "error",
+            "-f", "lavfi", "-i", "color=c=red:s=320x240:d=2:r=10",
+            "-f", "lavfi", "-i", "color=c=lime:s=320x240:d=3:r=10",
+            "-f", "lavfi", "-i", "color=c=blue:s=320x240:d=3:r=10",
+            "-filter_complex", "[0:v][1:v][2:v]concat=n=3:v=1:a=0",
+            "-pix_fmt", "yuv420p", str(path),
+        ],
+        check=True,
+    )
+    return path
+
+
+async def test_scene_change_sampling_end_to_end(tmp_path):
+    """sampling="scene_changes": the 5.0s cut (not on the uniform floor)
+    reaches the adapter, and the uniform floor timestamps are all kept."""
+    clip = _make_cut_clip(tmp_path / "cuts.mp4")
+    fake = _image_only_fake([{"data": GOOD}])
+    result = await Suvix().extract(
+        video=clip, schema=SCHEMA, instructions="x", extractor=fake,
+        options=ExtractionOptions(
+            strategy="selected_frames", sampling="scene_changes",
+            max_frames=8, max_refinement_rounds=0))
+
+    assert result.data == GOOD
+    assert "Scene-change sampling" in result.execution.strategy_reason
+    (request,) = fake.calls
+    assert request.frames is not None
+    frame_ts = [f.timestamp_seconds for f in request.frames]
+    # Uniform floor for (8s, budget 8 -> floor 4) is [0, 2, 4, 6].
+    for floor_t in (0.0, 2.0, 4.0, 6.0):
+        assert any(abs(t - floor_t) <= 0.2 for t in frame_ts)
+    # The 5.0s scene cut is not a floor timestamp and must be present.
+    assert any(abs(t - 5.0) <= 0.2 for t in frame_ts)
+    assert len(frame_ts) <= 8

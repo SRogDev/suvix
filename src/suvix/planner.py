@@ -24,6 +24,12 @@ class StrategyDecision(BaseModel):
 
     strategy: str
     reason: str
+    # Sampling plan for selected_frames runs: "uniform" (default) or
+    # "scene_changes" (scene candidates merged with a uniform floor).
+    # requires_scene_sampling tells the extraction layer it must run local
+    # scene detection (ffmpeg) instead of pure uniform timestamp math.
+    sampling: str = "uniform"
+    requires_scene_sampling: bool = False
 
 
 def select_strategy(
@@ -41,9 +47,12 @@ def select_strategy(
     requested = options.strategy
     if requested != "auto":
         _require_supported(requested, capabilities)
-        return StrategyDecision(
-            strategy=requested,
-            reason=f"Strategy explicitly requested by the developer: {requested}.",
+        return _with_sampling(
+            StrategyDecision(
+                strategy=requested,
+                reason=f"Strategy explicitly requested by the developer: {requested}.",
+            ),
+            options,
         )
 
     if capabilities.native_video:
@@ -56,18 +65,42 @@ def select_strategy(
             ),
         )
     if capabilities.image_input or capabilities.multi_image:
-        return StrategyDecision(
-            strategy="selected_frames",
-            reason=(
-                f"Adapter {capabilities.provider}/{capabilities.model} does not "
-                "support native video input; auto-selected selected_frames "
-                "using the adapter's image input."
+        return _with_sampling(
+            StrategyDecision(
+                strategy="selected_frames",
+                reason=(
+                    f"Adapter {capabilities.provider}/{capabilities.model} does not "
+                    "support native video input; auto-selected selected_frames "
+                    "using the adapter's image input."
+                ),
             ),
+            options,
         )
     raise UnsupportedStrategyError(
         f"Adapter {capabilities.provider}/{capabilities.model} supports neither "
         "native video nor image input; no extraction strategy is available.",
         details={"provider": capabilities.provider, "model": capabilities.model},
+    )
+
+
+def _with_sampling(decision: StrategyDecision, options: ExtractionOptions) -> StrategyDecision:
+    """Attach the developer's sampling choice to a selected_frames decision.
+
+    Sampling is explicit, never planner-invented: it only takes effect when
+    the developer set ``options.sampling == "scene_changes"``. Native-video
+    decisions never reach this helper (sampling does not apply to them).
+    """
+    if decision.strategy != "selected_frames" or options.sampling != "scene_changes":
+        return decision
+    return decision.model_copy(
+        update={
+            "sampling": "scene_changes",
+            "requires_scene_sampling": True,
+            "reason": decision.reason
+            + " Scene-change sampling explicitly requested: ffmpeg scene"
+            " candidates will be merged with a uniform floor (floor fraction"
+            f" {options.scene_floor_fraction}).",
+        }
     )
 
 
