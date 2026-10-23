@@ -276,7 +276,9 @@ SUVIX_RUN_INTEGRATION_TESTS=1 GEMINI_API_KEY=... uv run pytest tests/integration
 
 One PR = one logical change, squash-merged against `main`; never push directly to
 `main`. Every significant change ships a README touch-up in the same PR. Python work
-follows [uv](https://docs.astral.sh/uv/) + [Ruff](https://docs.astral.sh/ruff/);
+follows [uv](https://docs.astral.sh/uv/) + [Ruff](https://docs.astral.sh/ruff/) +
+[mypy](https://mypy.readthedocs.io/) (`uv run ruff check src tests` and
+`uv run mypy src/suvix` must both be clean);
 TypeScript/UI (playground aside) prefers Biome. See [AGENTS.md](AGENTS.md).
 
 ## License

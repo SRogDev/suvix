@@ -160,6 +160,42 @@ Single source of truth for where the project stands. Updated with every mileston
 
 All 10 milestones complete. v0.1.0 released on `main`.
 
+## Experiment branches (local, unmerged)
+
+- **2026-10-23 — `chore/typing-hardening` (based on v0.1.0 `main`): static
+  typing hardening with mypy.** Local only — not pushed, not merged
+  (GitHub account still suspended; zero GitHub contact).
+  - `mypy` + `types-jsonschema` added to the dev extra; `[tool.mypy]` in
+    `pyproject.toml`: `warn_return_any`, `warn_unused_ignores`, and
+    `disallow_untyped_defs = true` (the codebase nearly satisfied it —
+    3 untyped defs, all in the TwelveLabs adapter), plus a scoped
+    `ignore_missing_imports` override for the optional Gemini SDK
+    (`google`/`httpx`) only — no `ignore_errors` anywhere.
+  - Findings: **16 errors (mypy defaults) / 23 errors (final config) →
+    0** (`uv run mypy src/suvix`: no issues in 30 source files, verified
+    in both a dev-only venv and an all-extras venv).
+  - Categories fixed (typing-only): `cast()` after runtime number checks
+    on untyped data (validation, coarse-to-fine), untyped-def annotations
+    (TwelveLabs), `warn_return_any` casts on untyped SDK returns
+    (TwelveLabs asset ids, Gemini schema translation), an evidence
+    de-dup key annotation (Gemini), a widened `count_accuracy` signature
+    (`int | None` — a missing count already scored 0.0), and an
+    isinstance-narrowing loop in `summarize`.
+  - **Real bug found by mypy and fixed (`fix:` commit + regression
+    test):** benchmark baseline E passed `video=None` into
+    `inspect_video`/`extract_frames_at` for external `video_ref` tasks,
+    surfacing an opaque `TypeError: stat: path should be ... not
+    NoneType` as the run error. It now returns a clear recorded error
+    ("Baseline E requires a local video_path…").
+  - CI (`.github/workflows/ci.yml`, local file — still unpushable),
+    `AGENTS.md`, and `README.md` now list mypy alongside Ruff.
+  - Verification: `uv run pytest` → **344 passed, 3 skipped** (343
+    baseline + 1 new regression test; all-extras env. With only
+    `--extra dev` the suite collects fewer tests because provider
+    test modules `importorskip` their SDKs at module level — 293
+    passed / 5 skipped in that env, no failures either way);
+    `uv run ruff check src tests` clean; `uv run mypy src/suvix` clean.
+
 ## Pending Roger's action (not blocking the release)
 
 - **CI workflow**: `.github/workflows/ci.yml` is written but could not be

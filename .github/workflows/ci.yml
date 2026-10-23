@@ -9,7 +9,7 @@
 #   git push origin main   # via a remote with a full-scope credential
 #
 # What it does: on every push and pull request to main, it installs uv,
-# syncs dev dependencies, runs ruff, and runs the default pytest suite
+# syncs dev dependencies, runs ruff and mypy, and runs the default pytest suite
 # (no network, no API keys — provider integration tests stay skipped).
 # ubuntu-latest runners ship ffmpeg/ffprobe, which the media tests need.
 
@@ -43,6 +43,9 @@ jobs:
 
       - name: Lint (ruff)
         run: uv run ruff check src tests
+
+      - name: Type check (mypy)
+        run: uv run mypy src/suvix
 
       - name: Test (default suite — no network, no API keys)
         run: uv run pytest -q

@@ -28,6 +28,8 @@ before writing code; this file is the working agreement, not a duplicate of the 
 - **TDD with evidence**: write the failing test first, implement, refactor while
   green. Report RED→GREEN evidence, not just "tests pass".
 - **Ruff** (configured in `pyproject.toml`) must be clean before delivery.
+- **mypy** (configured in `pyproject.toml`): `uv run mypy src/suvix` must
+  report no issues before delivery.
 - **Reviewable units**: one focused change per commit; PRs are one logical change.
 - **Conventional commits** (`feat:`, `fix:`, `docs:`, `test:`, `chore:`, …).
 - **PR workflow is absolute**: every change ships as a PR against `main`,
