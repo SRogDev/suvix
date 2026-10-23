@@ -12,7 +12,11 @@ Honesty rules inherited from SUVIX_PLAN.md §16:
 - Negative results are retained and reported.
 """
 
-from suvix.evaluation.cost import register_pricing, resolve_pricing
+from suvix.evaluation.cost import (
+    load_verified_pricing_snapshot,
+    register_pricing,
+    resolve_pricing,
+)
 from suvix.evaluation.metrics import (
     cost_per_correct_event,
     count_accuracy,
@@ -49,6 +53,7 @@ __all__ = [
     "failure_rate",
     "invalid_evidence_rate",
     "json_parse_success",
+    "load_verified_pricing_snapshot",
     "mean_latency",
     "missing_required_field_rate",
     "register_pricing",
