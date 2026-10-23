@@ -50,6 +50,23 @@ def test_negative_segment_length_raises():
         split_into_segments(10.0, -2.0)
 
 
+# Regression tests for the non-finite bug found by property-based tests:
+# With the old ``<= 0`` guards, a NaN duration
+# returned [] and an infinite duration looped forever generating segments.
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+def test_nonfinite_duration_raises_regression(bad):
+    with pytest.raises(MediaProcessingError):
+        split_into_segments(bad, 4.0)
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+def test_nonfinite_segment_length_raises_regression(bad):
+    with pytest.raises(MediaProcessingError):
+        split_into_segments(10.0, bad)
+
+
 def test_segment_rejects_start_after_end():
     with pytest.raises(ValidationError):
         Segment(segment_id="seg_000", start_seconds=5.0, end_seconds=3.0)

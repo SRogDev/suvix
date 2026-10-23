@@ -13,6 +13,8 @@ about capturing brief events between samples.
 
 from __future__ import annotations
 
+import math
+
 from suvix.errors import MediaProcessingError
 
 
@@ -23,7 +25,7 @@ def uniform_timestamps(
     interval_seconds: float | None = None,
 ) -> list[float]:
     """Return ascending sample timestamps in seconds."""
-    if duration_seconds <= 0:
+    if not math.isfinite(duration_seconds) or duration_seconds <= 0:
         raise MediaProcessingError(
             f"duration_seconds must be positive, got {duration_seconds}",
             details={"duration_seconds": duration_seconds},
@@ -35,7 +37,7 @@ def uniform_timestamps(
         )
 
     if interval_seconds is not None:
-        if interval_seconds <= 0:
+        if not math.isfinite(interval_seconds) or interval_seconds <= 0:
             raise MediaProcessingError(
                 f"interval_seconds must be positive, got {interval_seconds}",
                 details={"interval_seconds": interval_seconds},
