@@ -1,5 +1,17 @@
 # Suvix Improvement Experiment — Phase 1 Research
 
+> **⚠ BIBLIOGRAPHY SUPERSEDED (integrator errata, 2026-10-23).** The
+> paper list and arXiv IDs in this document do not match the papers
+> actually read (the raw notes, held in ephemeral `/tmp`, are lost).
+> Several IDs below failed verification — including two impossible
+> future IDs (2604.05015, 2607.05791) and IDs belonging to unrelated
+> papers (2502.21261, 2503.02897, 1705.03245). The verified bibliography
+> (13 papers, IDs re-checked against arxiv.org) is the appendix of
+> `EXPERIMENT_REPORT.md`, and it supersedes this document's citations.
+> The design decisions survive (independently supported by the verified
+> set); the attributions in this file do not. Treat this document as a
+> working draft with a known-bad bibliography, kept for audit trail.
+
 Date: 2026-10-23. Purpose: before changing any code in the v0.1.0 → improvement
 experiment, gather (a) modern published evidence on frame sampling and video
 evaluation methodology, and (b) re-validated provider facts. Every Phase 2
@@ -15,7 +27,7 @@ precisely as the sources support.
 
 ## Part A — Frame sampling for video-LLMs (arXiv)
 
-### A1. AKS — Adaptive Keyframe Sampling for Video Understanding (arXiv:2502.21261, 2025)
+### A1. AKS — Adaptive Keyframe Sampling for Video Understanding (arXiv:2502.21271, 2025)
 - Replaces uniform sampling with per-partition candidate scoring under an
   explicit coverage constraint: **every equal temporal partition contributes
   at least one frame**, then remaining budget is allocated adaptively.
@@ -38,7 +50,7 @@ precisely as the sources support.
   ablation) — direct evidence of heavy temporal redundancy, and of a real,
   measurable (small) cost for removing it.
 
-### A4. BOLT — Boost Large Vision-Language Model Without Training (arXiv:2503.02897, 2025)
+### A4. BOLT — Boost Large Vision-Language Model Without Training (arXiv:2503.21483, 2025)
 - **Warning (inconvenient finding):** selecting only the most query-relevant
   frames actively hurts. Inverse-transform sampling that deliberately includes
   some low-similarity frames beat plain top-K selection on MLVU average

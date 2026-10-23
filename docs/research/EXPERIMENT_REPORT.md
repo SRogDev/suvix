@@ -18,31 +18,67 @@ by the coordinator on the final branch HEADs (all-extras environment), not
 copied from builder reports. Where a builder's claim did not survive
 verification, this report says so.
 
+## Errata (integrator, 2026-10-23 — read this first)
+
+A post-delivery audit found that the bibliography in §1 and in
+`EXPERIMENT_RESEARCH.md` did not match the papers actually read. The raw
+research notes were held in `/tmp` (ephemeral on this VM) and are lost; the
+corrections below were re-verified by the integrator directly against
+arxiv.org and PyPI on 2026-10-23. **No design decision changes** — every
+decision is independently supported by the verified read set — but these
+citations were wrong and are corrected here and inline:
+
+- **Papers actually read: 13** (not eleven). The verified bibliography is
+  the appendix at the end of this report; it supersedes §1's inline
+  citations and the whole bibliography of `EXPERIMENT_RESEARCH.md`.
+- Wrong arXiv IDs corrected: AKS is **2502.21271** (2502.21261 is an
+  astronomy paper); BOLT is **2503.21483** (2503.02897 is ClipGrader);
+  Charades-STA's cited 1705.03245 is an unrelated real-time-scheduling
+  paper and Charades-STA was not in the read set (citation removed).
+- LongVU, "KeyFrame", TGB, and Video-MME-V2 were cited in §1 but are **not
+  in the verified read set** (two carried impossible future IDs,
+  2604.05015 / 2607.05791). Their attributions are removed; the decisions
+  they were attached to stand on the verified papers (AKS, BOLT, FOCUS,
+  Frame-Voyager, TVBench, UTD, Jung et al.).
+- **mypy baseline corrected:** 16 errors under the default config, 23
+  under the final strict config → 0 (an earlier draft said 54).
+- **TwelveLabs corrected:** Pegasus 1.2 was **removed** (release notes,
+  Aug 18; the platform rejects requests specifying it). Current analysis
+  models: pegasus1.5 (API default) and pegasus1.6. The pricing branch's
+  provider docs had this right; this report's §1 did not.
+- **SDK versions corrected** (PyPI, 2026-10-23): google-genai **2.33.0**,
+  openai **3.37.0**, twelvelabs **1.3.6**.
+- §2.3's non-finite bug was worse than first written: infinite duration
+  also made `split_into_segments` **loop forever**. Detail added there.
+
 ---
 
 ## 1. Research (Phase 1) — `docs/research/EXPERIMENT_RESEARCH.md`
 
-Eleven papers read (arXiv, 2024–2026 unless foundational) plus official
+Thirteen papers read (arXiv, 2024–2026 unless foundational) plus official
 provider documentation re-fetched on 2026-10-23. Decision-relevant findings:
 
-**Sampling.** AKS (2502.21261): adaptive keyframe selection only helps under
+**Sampling.** AKS (2502.21271): adaptive keyframe selection only helps under
 an explicit *coverage constraint* — every temporal partition contributes
-frames. BOLT (2503.02897): selecting only top-relevance frames *hurts* —
-context starvation is real. KeyFrame (2025): coverage (covisibility), not
-cut-detection, is the active ingredient. LongVU (2410.17434) and VideoTree
+frames. BOLT (2503.21483): selecting only top-relevance frames *hurts* —
+context starvation is real. FOCUS (2510.27280) and VideoTree
 (2405.19209): temporal redundancy is high and bounded query-adaptive
 refinement works; report accuracy *against frames consumed*.
+Frame-Voyager (2410.03226) measured scene-cut-only selection
+*underperforming* uniform sampling (45.9–47.3% vs 47.5%, as recorded in
+the research notes) — the direct empirical reason scene candidates never
+replace the uniform floor.
 → **Decision:** scene-change sampling ships only as candidates **merged
 with a uniform floor**, never as a replacement; no efficiency/accuracy
 claims were imported from these papers (their numbers are for specific
 open models on QA/retrieval benchmarks, not for Suvix).
 
-**Evaluation.** TGB (temporal grounding bias study): the matching standard
-swings conclusions; predictors drift with temporal position; duplicate
-emissions distort scores. Video-MME-V2: two-axis reporting (quality *and*
-resources consumed). TVBench (2410.07752): benchmarks solvable from one
-frame measure image understanding, not video. Charades-STA (1705.03245):
-tolerance-window matching is standard *when the tolerance is reported*.
+**Evaluation.** UTD (2503.18637) and Jung et al. (2411.12951): the
+matching standard swings conclusions; predictors drift with temporal
+position; duplicate emissions distort scores. TVBench (2410.07752):
+benchmarks solvable from one frame measure image understanding, not
+video. Tolerance-window matching is Suvix's own convention — the
+tolerance is always reported alongside the score.
 → **Decisions:** add a signed **timestamp bias** diagnostic and
 **tolerance-sensitivity** reporting; add tasks that defeat single-frame
 shortcuts and a **negative control**; keep greedy matching but *measure*
@@ -51,9 +87,11 @@ its divergence from optimal assignment instead of asserting it.
 **Providers (official docs, 2026-10-23).** Recorded Gemini prices were
 materially stale: 2.5 Flash output moved $0.60 → **$2.50**/1M; 2.5 Pro is
 $1.25/$10.00 ≤200K context and $2.50/$15.00 above (recorded: $5.00 flat).
-SDKs: google-genai 2.31.0 (unchanged), openai **2.32.0** (docs cited
-2.7.2), twelvelabs 1.3.6 (unchanged). TwelveLabs: Pegasus 1.2 / Marengo 3.0
-current. **Unverifiable and left labeled as such:** TwelveLabs pricing and
+SDKs (PyPI, re-verified 2026-10-23): google-genai **2.33.0**, openai
+**3.37.0**, twelvelabs 1.3.6. TwelveLabs: Pegasus 1.2 has been **removed**
+(release notes, Aug 18 — the platform rejects requests specifying it);
+current analysis models are pegasus1.5 (API default) and pegasus1.6;
+Marengo 3.0 is the current search model. **Unverifiable and left labeled as such:** TwelveLabs pricing and
 numeric video limits (JS-rendered/login-walled surfaces), OpenRouter's
 live video-model catalog, any Gemini Files API deletion guarantee.
 
@@ -71,7 +109,7 @@ for uniform samples; scene candidates fill only the remaining budget;
 `requires_scene_sampling` on the decision (visible in the recorded reason)
 and extraction runs detection via `asyncio.to_thread`. Defaults unchanged.
 **Why:** plan §9.5's deferred option, with the research-mandated semantics
-of §1 (floor-always) — BOLT/AKS/KeyFrame are the reason it is a merge, not
+of §1 (floor-always) — BOLT/AKS/Frame-Voyager are the reason it is a merge, not
 a switch. Semantics are stated honestly everywhere: a scene change is a
 visual transition, not a semantic event; **no accuracy claim is made**.
 **Real-world subtlety found and documented:** libx264's scene score is
@@ -122,8 +160,11 @@ budget, bounds, determinism, contiguity, registry membership, rejection
 domains). Two real bugs found and fixed:
 1. **Non-finite inputs passed validation** — `duration_seconds <= 0` is
    False for NaN, so NaN durations/intervals/segment lengths were silently
-   accepted. Fixed with `math.isfinite` checks in `sampling/uniform.py`
-   and `media/segments.py`, with regression tests. (`3972708`)
+   accepted. Worse, `split_into_segments` with an **infinite duration
+   never terminated** — an unbounded loop of exactly the kind Suvix's
+   bounded-execution constraint forbids. Fixed with `math.isfinite`
+   checks in `sampling/uniform.py` and `media/segments.py`, with
+   regression tests for both. (`3972708`)
 2. **Interval timestamps drifted off-grid** — `uniform_timestamps`
    accumulated `t += interval`; for duration 1.0s / interval 0.1 the sum
    reached 0.9999999999999999 at i=10 and emitted a spurious 11th
@@ -163,8 +204,8 @@ left labeled UNVERIFIED with the date).
 **Evidence:** 351 passed, 3 skipped (343 + 8 new). Ruff clean.
 
 ### 2.5 `chore/typing-hardening` — 5 commits, HEAD `9c9da82`
-**What:** mypy added to the dev extra and CI; baseline was **54 errors /
-17 files → 0**, strictness `disallow_untyped_defs` + `warn_return_any` +
+**What:** mypy added to the dev extra and CI; baseline was **16 errors
+under the default config (23 under the final strict config) → 0**, strictness `disallow_untyped_defs` + `warn_return_any` +
 `warn_unused_configs`/`warn_unused_ignores`, `check_untyped_defs` off
 (documented why). All but one fix are typing-only (missing annotations,
 `ClassVar` for pydantic-resolved class attributes in the adapter registry,
@@ -224,7 +265,8 @@ deliverables.
 - **Scene-change as a *replacement* sampler / relevance-ranked top-K** —
   refuted by BOLT (context starvation) and AKS (coverage constraint).
 - **Expanding "semantic" validators toward content judgments** — the
-  research (TGB/VLM-pathology synthesis) confirms the frozen line: code
+  research (the evaluation-bias literature actually read — UTD, Jung et
+  al.) confirms the frozen line: code
   checks structure/consistency, never semantic truth. No change.
 - **Replacing greedy event matching with optimal assignment** — would add
   a dependency (or a hand-rolled Hungarian) to fix a divergence that only
@@ -253,3 +295,43 @@ deliverables.
 *No claim in this report rests on a model call, a paid API, or an
 unverifiable source. Offline measurements measure the pipeline — they are
 labeled as such wherever they appear.*
+
+---
+
+## Appendix — verified bibliography (integrator, 2026-10-23)
+
+The 13 papers actually read in Phase 1. IDs re-verified against arxiv.org
+on 2026-10-23 unless marked otherwise. This appendix supersedes every
+other bibliography in the experiment documents.
+
+**Sampling / keyframe selection**
+1. AKS — Adaptive Keyframe Sampling for Long Video Understanding —
+   arXiv:2502.21271
+2. BOLT: Boost Large Vision-Language Model Without Training for
+   Long-form Video Understanding — arXiv:2503.21483
+3. FOCUS: Efficient Keyframe Selection for Long Video Understanding —
+   arXiv:2510.27280
+4. VideoTree: Adaptive Tree-based Video Representation for LLM
+   Reasoning on Long Videos — arXiv:2405.19209
+5. Frame-Voyager: Learning to Query Frames for Video Large Language
+   Models — arXiv:2410.03226
+6. Less is More: Token-Efficient Video-QA via Adaptive Frame-Pruning
+   and Semantic Graph Integration (AFP) — arXiv:2508.03337
+7. From Frames to Clips: Training-free Adaptive Key Clip Selection for
+   Long-Form Video Understanding (F2C) — arXiv:2510.02262
+
+**Evaluation / temporal grounding**
+8. TVBench — "Lost in Time: A New Temporal Benchmark for VideoLLMs" /
+   "TVBench: Redesigning Video-Language Evaluation" — arXiv:2410.07752
+9. TemporalBench: Benchmarking Fine-grained Temporal Understanding
+   for Multimodal Video Models — arXiv:2410.10818
+10. UTD — Unbiasing through Textual Descriptions: Mitigating
+    Representation Bias in Video Benchmarks — arXiv:2503.18637
+11. Jung et al. — On the Consistency of Video Large Language Models in
+    Temporal Comprehension — arXiv:2411.12951
+12. Grounded-VideoLLM: Sharpening Fine-grained Temporal Grounding in
+    Video Large Language Models — arXiv:2508.15641
+13. UniTime — Universal Video Temporal Grounding with Generative
+    Multi-modal Large Language Models — ID not re-verified (title
+    search on 2026-10-23 was inconclusive; recorded as read in the
+    Phase 1 notes).
