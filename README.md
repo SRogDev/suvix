@@ -66,6 +66,12 @@ their absence raises a clear, actionable error instead of failing obscurely.
   (`pts_verified=True`) and clearly marked as requested-timestamp fallbacks otherwise.
   Temporary files are always cleaned up; results carry image bytes in memory.
 - `suvix.sampling.uniform_timestamps(...)` — deterministic uniform sampling.
+- `suvix.sampling.scene_change_timestamps(...)` / `make_scene_sampler(...)` —
+  optional scene-change sampling (experiment branch): ffmpeg scene-transition
+  candidates **merged with a uniform floor, never a replacement** for it,
+  selected via `ExtractionOptions(sampling="scene_changes")`. A scene change
+  is a visual transition, not a semantic event; no accuracy advantage over
+  uniform sampling is claimed (no benchmark evidence exists either way).
 - `suvix.media.split_into_segments(...)` / `to_global_seconds(...)` — segment math
   with correct offset handling for the coarse-to-fine workflow (Milestone 5).
 

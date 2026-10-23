@@ -160,6 +160,16 @@ Single source of truth for where the project stands. Updated with every mileston
 
 All 10 milestones complete. v0.1.0 released on `main`.
 
+## Experiment branches (local, unmerged — 2026-10-23 improvement experiment)
+
+- `feat/scene-change-sampling` — plan §9.5's deferred scene-change sampling:
+  ffmpeg scene-transition candidates merged with a uniform floor (never a
+  replacement), behind `ExtractionOptions(sampling="scene_changes")` with
+  `scene_threshold` / `scene_floor_fraction` knobs. Research basis:
+  `docs/research/EXPERIMENT_RESEARCH.md` (AKS, BOLT, KeyFrame). A scene
+  change is a visual transition, not a semantic event; no accuracy claim is
+  made. Local branch only (GitHub suspended); PR-ready.
+
 ## Pending Roger's action (not blocking the release)
 
 - **CI workflow**: `.github/workflows/ci.yml` is written but could not be
