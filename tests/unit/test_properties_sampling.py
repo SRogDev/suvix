@@ -194,9 +194,12 @@ def test_split_partitions_the_duration(pair):
     for first, second in zip(segments, segments[1:], strict=False):
         assert first.end_seconds == second.start_seconds
     assert abs(sum(s.length_seconds for s in segments) - duration) <= EPS
-    # Count is ceil(duration/length), possibly +1 dust segment from float
-    # accumulation (see module docstring); never less, never wildly more.
-    assert math.ceil(duration / length) <= len(segments) <= math.ceil(duration / length) + 1
+    # Count is ceil(duration/length), possibly ±1 from float effects in
+    # BOTH directions: accumulation can add a dust segment (+1), and the
+    # division itself can round up across an integer boundary so that
+    # ceil(fl(duration/length)) overstates the true count by one (-1)
+    # while the segments still tile the duration exactly (asserted above).
+    assert math.ceil(duration / length) - 1 <= len(segments) <= math.ceil(duration / length) + 1
 
 
 @settings(max_examples=MAX_EXAMPLES, deadline=None)
