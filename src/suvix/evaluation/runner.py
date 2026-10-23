@@ -664,12 +664,11 @@ def summarize(results: list[BaselineResult]) -> dict[str, Any]:
         for r in group:
             names.update(r.metrics.keys())
         for name in sorted(names):
-            values = [
-                r.metrics[name]
-                for r in group
-                if isinstance(r.metrics.get(name), (int, float))
-                and not isinstance(r.metrics.get(name), bool)
-            ]
+            values: list[float] = []
+            for r in group:
+                value = r.metrics.get(name)
+                if isinstance(value, (int, float)) and not isinstance(value, bool):
+                    values.append(float(value))
             if values:
                 metric_means[name] = {
                     "n": len(values),

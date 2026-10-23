@@ -20,7 +20,7 @@ import json
 import math
 import os
 import re
-from typing import Any
+from typing import Any, cast
 
 from suvix.adapters.base import (
     AdapterRequest,
@@ -89,8 +89,10 @@ def _load_sdk() -> tuple[Any, Any]:
     construction fails with an actionable message instead of an ImportError.
     """
     try:
-        import httpx  # noqa: PLC0415
-        from google import genai  # noqa: PLC0415
+        # Optional `gemini` extra: not installed in the dev environment, so
+        # mypy cannot resolve these lazy imports (guarded at runtime below).
+        import httpx  # type: ignore[import-not-found]  # noqa: PLC0415
+        from google import genai  # type: ignore[import-not-found]  # noqa: PLC0415
     except ImportError as exc:
         raise ProviderConfigError(
             "The Gemini adapter needs the google-genai SDK: pip install suvix[gemini]"
@@ -194,7 +196,9 @@ def to_gemini_schema(schema: Any) -> dict[str, Any]:
                 )
         return out
 
-    return _resolve(schema, frozenset())
+    # _resolve returns Any because it walks untyped schema data; the
+    # top-level call always produces the translated schema dict.
+    return cast("dict[str, Any]", _resolve(schema, frozenset()))
 
 
 def _collect_evidence(data: Any) -> list[EvidenceRef]:
@@ -223,7 +227,7 @@ def _collect_evidence(data: Any) -> list[EvidenceRef]:
             return
         timestamp = _number(node.get("timestamp_seconds"))
         if timestamp is not None:
-            key = ("ts", timestamp)
+            key: tuple[Any, ...] = ("ts", timestamp)
             if key not in seen:
                 seen.add(key)
                 refs.append(

@@ -26,7 +26,7 @@ from __future__ import annotations
 import json
 import math
 from collections.abc import Mapping
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 
 from suvix.adapters.base import (
     AdapterRequest,
@@ -182,19 +182,23 @@ def _validate_candidate_intervals(
                 warnings.append(f"{reason}: {label} is not a finite number")
                 break
         else:
-            if start > end:
+            # The loop above only reaches here when both values are finite
+            # numbers; cast tells mypy (values are untyped provider output).
+            start_f = float(cast("float | int", start))
+            end_f = float(cast("float | int", end))
+            if start_f > end_f:
                 warnings.append(
                     f"{reason}: start_seconds ({start}) exceeds "
                     f"end_seconds ({end})"
                 )
                 continue
-            if start < 0 or end > duration_seconds:
+            if start_f < 0 or end_f > duration_seconds:
                 warnings.append(
                     f"{reason}: outside the video duration "
                     f"[0, {duration_seconds}]"
                 )
                 continue
-            intervals.append((float(start), float(end)))
+            intervals.append((start_f, end_f))
     return _merge_overlapping(intervals), warnings
 
 

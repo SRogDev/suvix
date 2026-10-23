@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, cast
 
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError
@@ -104,7 +104,13 @@ def _check_intervals_and_frame_refs(
         pointer = _path or "/"
         start = data.get("start_seconds")
         end = data.get("end_seconds")
-        if _is_number(start) and _is_number(end) and start > end:
+        # _is_number narrows at runtime; cast tells mypy (values come from
+        # untyped extracted data, so static narrowing cannot see it).
+        if (
+            _is_number(start)
+            and _is_number(end)
+            and cast(float, start) > cast(float, end)
+        ):
             yield ValidationIssue(
                 code="semantic_interval_invalid",
                 message=(

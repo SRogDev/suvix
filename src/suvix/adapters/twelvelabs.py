@@ -16,7 +16,8 @@ import importlib
 import json
 import os
 import time
-from typing import Any
+from collections.abc import Callable
+from typing import Any, cast
 
 from suvix.adapters.base import (
     AdapterRequest,
@@ -275,7 +276,8 @@ class TwelveLabsExtractor:
             raise
         except Exception as exc:
             raise self._map_error(exc) from exc
-        return asset.id
+        # SDK asset objects are untyped (Any); their id is the asset string.
+        return cast(str, asset.id)
 
     async def _upload_frame(self, frame: FrameInput) -> str:
         """Upload one frame as an image asset; return the asset id."""
@@ -288,7 +290,8 @@ class TwelveLabsExtractor:
             )
         except Exception as exc:
             raise self._map_error(exc) from exc
-        return asset.id
+        # SDK asset objects are untyped (Any); their id is the asset string.
+        return cast(str, asset.id)
 
     async def _wait_until_ready(self, asset_id: str) -> None:
         """Poll the asset until ready (bounded)."""
@@ -328,13 +331,15 @@ class TwelveLabsExtractor:
                 )
         return warnings
 
-    async def _call_with_timeout(self, request: AdapterRequest, func, **kwargs):
+    async def _call_with_timeout(
+        self, request: AdapterRequest, func: Callable[..., Any], **kwargs: Any
+    ) -> Any:
         timeout = request.options.per_call_timeout_seconds
         return await asyncio.wait_for(asyncio.to_thread(func, **kwargs), timeout)
 
     # -- response handling ---------------------------------------------------
 
-    def _response_format(self, schema: dict[str, Any]):
+    def _response_format(self, schema: dict[str, Any]) -> Any:
         return self._types.SyncResponseFormat(
             type="json_schema",
             json_schema=self._types.TextResponseFormatJsonSchema(
@@ -345,7 +350,12 @@ class TwelveLabsExtractor:
             ),
         )
 
-    def _to_extraction(self, response: Any, *, evidence_factory) -> ProviderExtraction:
+    def _to_extraction(
+        self,
+        response: Any,
+        *,
+        evidence_factory: Callable[[dict[str, Any]], list[EvidenceRef]],
+    ) -> ProviderExtraction:
         text = getattr(response, "data", None)
         data: dict[str, Any] | None = None
         raw_text: str | None = None

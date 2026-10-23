@@ -210,8 +210,11 @@ def event_precision_recall_f1(
     return {"precision": precision, "recall": recall, "f1": f1}
 
 
-def count_accuracy(predicted: int, expected: int) -> float:
+def count_accuracy(predicted: int | None, expected: int) -> float:
     """Binary object-count accuracy: 1.0 on exact match, 0.0 otherwise.
+
+    ``predicted`` may be ``None`` when the extraction produced no count
+    for the label — a missing count is simply not an exact match (0.0).
 
     Limitation: deliberately no partial credit — an off-by-one counts the
     same as a wild miss. Use a separate error-magnitude metric if the
