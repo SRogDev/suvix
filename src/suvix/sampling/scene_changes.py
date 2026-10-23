@@ -25,17 +25,17 @@ land exactly on the cut timestamps. The scan decodes the whole video, so
 it is bounded by an explicit timeout and is deterministic for a given
 file and threshold.
 
-Integration point (deliberately NOT wired in this experiment branch):
-:func:`suvix.extraction._run_selected_frames` currently calls
-:func:`~suvix.sampling.uniform.uniform_timestamps` directly and
-``ExtractionOptions`` has no sampling-strategy field, so there is no
-existing sampler-selection seam. Wiring this sampler in would require a
-new public options field (e.g. ``sampling="uniform" | "scene"``) plus
-threading the video path into sampler selection — a public-contract
-change left for a separate, reviewed change. Defaults are unchanged:
-nothing in the pipeline imports this module yet. Callers who want the
-behavior today can use :func:`make_scene_sampler`, which returns a
-callable matching the :class:`~suvix.sampling.base.Sampler` protocol.
+Integration: wired behind the explicit ``ExtractionOptions.sampling``
+field (``"uniform"`` default, ``"scene_changes"`` opt-in). The planner
+records ``sampling="scene_changes"`` / ``requires_scene_sampling=True`` on
+the strategy decision, and ``suvix.extraction._run_selected_frames`` then
+builds its coarse timestamps through :func:`make_scene_sampler` (run via
+``asyncio.to_thread`` — detection blocks on ffmpeg) instead of
+:func:`~suvix.sampling.uniform.uniform_timestamps`. Selecting it is always
+the developer's explicit choice; the planner never picks it on its own,
+and the default pipeline is unchanged. :func:`make_scene_sampler` also
+remains available standalone as a callable matching the
+:class:`~suvix.sampling.base.Sampler` protocol.
 """
 
 from __future__ import annotations
