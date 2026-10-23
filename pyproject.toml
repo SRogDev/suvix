@@ -63,11 +63,17 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.mypy]
 # Static typing for the library (checked in CI: `uv run mypy src/suvix`).
 # The codebase is fully annotated, so untyped definitions are disallowed.
-# Optional provider SDKs (google-genai/httpx, openai, twelvelabs) are not
-# installed by the dev extra; their lazy imports carry targeted
-# `type: ignore[import-not-found]` comments at the import site instead of
-# a blanket ignore here.
 python_version = "3.10"
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
+
+# The Gemini SDK is an optional extra: it is absent from the dev/CI
+# environment (its adapter imports it lazily, guarded by ImportError).
+# ignore_missing_imports for just these two third-party modules —
+# NOT ignore_errors for any suvix module. A per-line type: ignore was
+# rejected: with warn_unused_ignores it errors as "unused" whenever a
+# developer happens to have the extra installed.
+[[tool.mypy.overrides]]
+module = ["google", "google.*", "httpx"]
+ignore_missing_imports = true

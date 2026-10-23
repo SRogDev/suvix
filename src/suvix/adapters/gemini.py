@@ -89,10 +89,11 @@ def _load_sdk() -> tuple[Any, Any]:
     construction fails with an actionable message instead of an ImportError.
     """
     try:
-        # Optional `gemini` extra: not installed in the dev environment, so
-        # mypy cannot resolve these lazy imports (guarded at runtime below).
-        import httpx  # type: ignore[import-not-found]  # noqa: PLC0415
-        from google import genai  # type: ignore[import-not-found]  # noqa: PLC0415
+        # Optional `gemini` extra: when it is not installed, mypy treats
+        # these lazy imports via the pyproject overrides for google/httpx
+        # (guarded at runtime by the except below).
+        import httpx  # noqa: PLC0415
+        from google import genai  # noqa: PLC0415
     except ImportError as exc:
         raise ProviderConfigError(
             "The Gemini adapter needs the google-genai SDK: pip install suvix[gemini]"
