@@ -298,6 +298,88 @@ class TestUnsupportedClaimRate:
         )
 
 
+class TestTimestampBias:
+    def test_systematic_positive_drift(self):
+        pred = [
+            {"type": "flash", "timestamp_seconds": 2.8},
+            {"type": "flash", "timestamp_seconds": 5.8},
+        ]
+        exp = [
+            {"type": "flash", "timestamp_seconds": 2.5},
+            {"type": "flash", "timestamp_seconds": 5.5},
+        ]
+        # Every prediction is +0.3s late: MAE and bias coincide at 0.3.
+        assert metrics.timestamp_bias(pred, exp, time_tolerance_s=1.0) == pytest.approx(0.3)
+        pred_times = [e["timestamp_seconds"] for e in pred]
+        exp_times = [e["timestamp_seconds"] for e in exp]
+        assert metrics.timestamp_mae(
+            pred_times, exp_times, time_tolerance_s=1.0
+        ) == pytest.approx(0.3)
+
+    def test_cancelling_errors_have_zero_bias_but_nonzero_mae(self):
+        # +0.5 and -0.5 cancel in the signed mean: bias ~= 0 while MAE = 0.5.
+        # This is exactly the case MAE alone cannot distinguish from drift.
+        pred = [
+            {"type": "flash", "timestamp_seconds": 10.5},
+            {"type": "flash", "timestamp_seconds": 19.5},
+        ]
+        exp = [
+            {"type": "flash", "timestamp_seconds": 10.0},
+            {"type": "flash", "timestamp_seconds": 20.0},
+        ]
+        assert metrics.timestamp_bias(pred, exp, time_tolerance_s=1.0) == pytest.approx(0.0)
+        assert metrics.timestamp_mae(
+            [10.5, 19.5], [10.0, 20.0], time_tolerance_s=1.0
+        ) == pytest.approx(0.5)
+
+    def test_negative_drift(self):
+        pred = [{"type": "flash", "timestamp_seconds": 2.2}]
+        exp = [{"type": "flash", "timestamp_seconds": 2.5}]
+        assert metrics.timestamp_bias(pred, exp, time_tolerance_s=1.0) == pytest.approx(-0.3)
+
+    def test_no_pairs_is_undefined(self):
+        pred = [{"type": "flash", "timestamp_seconds": 100.0}]
+        exp = [{"type": "flash", "timestamp_seconds": 1.0}]
+        assert metrics.timestamp_bias(pred, exp, time_tolerance_s=1.0) is None
+        assert metrics.timestamp_bias([], [], time_tolerance_s=1.0) is None
+
+    def test_type_mismatch_does_not_pair(self):
+        pred = [{"type": "beep", "timestamp_seconds": 2.5}]
+        exp = [{"type": "flash", "timestamp_seconds": 2.5}]
+        assert metrics.timestamp_bias(pred, exp, time_tolerance_s=1.0) is None
+
+
+class TestEventMetricsByTolerance:
+    def test_sensitivity_to_tolerance_choice(self):
+        pred = [
+            {"type": "flash", "timestamp_seconds": 10.3},
+            {"type": "flash", "timestamp_seconds": 20.8},
+        ]
+        exp = [
+            {"type": "flash", "timestamp_seconds": 10.0},
+            {"type": "flash", "timestamp_seconds": 20.0},
+        ]
+        out = metrics.event_metrics_by_tolerance(
+            pred, exp, tolerances=[0.1, 0.5, 1.0]
+        )
+        assert set(out) == {0.1, 0.5, 1.0}
+        # No pair within 0.1s; one pair (0.3s) within 0.5s; both within 1.0s.
+        assert out[0.1] == (0.0, 0.0, 0.0)
+        p, r, f1 = out[0.5]
+        assert (p, r, f1) == (pytest.approx(0.5), pytest.approx(0.5), pytest.approx(0.5))
+        assert out[1.0] == (1.0, 1.0, 1.0)
+
+    def test_matches_single_tolerance_function(self):
+        pred = [{"type": "flash", "timestamp_seconds": 2.9}]
+        exp = [{"type": "flash", "timestamp_seconds": 2.5}]
+        out = metrics.event_metrics_by_tolerance(pred, exp, tolerances=[0.5])
+        single = metrics.event_precision_recall_f1(pred, exp, time_tolerance_s=0.5)
+        assert out[0.5] == (single["precision"], single["recall"], single["f1"])
+
+    def test_empty_tolerances(self):
+        assert metrics.event_metrics_by_tolerance([], [], tolerances=[]) == {}
+
+
 # ---------------------------------------------------------------------------
 # Operational metrics
 # ---------------------------------------------------------------------------

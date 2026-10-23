@@ -193,6 +193,9 @@ def _semantic_metrics(task: BenchmarkTask, data: dict[str, Any]) -> dict[str, An
         out["timestamp_mae"] = metrics.timestamp_mae(
             pred_times, exp_times, time_tolerance_s=tol
         )
+        out["timestamp_bias"] = metrics.timestamp_bias(
+            predicted, expected, time_tolerance_s=tol
+        )
         n_pred = len(predicted) if predicted else 0
         out["n_correct_events"] = (
             round(prf["precision"] * n_pred) if prf["precision"] is not None else 0
