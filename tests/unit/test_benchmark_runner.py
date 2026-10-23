@@ -295,6 +295,29 @@ class TestBaselines:
         assert "not applicable" in result.error
         assert any("optional baseline" in n for n in result.comparability_notes)
 
+    async def test_e_external_video_ref_is_a_clear_error_not_a_type_error(self):
+        # Regression (mypy finding): baseline E samples frames locally, so
+        # an external video_ref task has no local path. It used to fall
+        # through to inspect_video(None) and surface an opaque
+        # "TypeError: stat: path should be ..." as the run error.
+        task = BenchmarkTask(
+            task_id="t",
+            category="temporal_events",
+            video_ref="https://example.com/video.mp4",
+            video_sha256="abc123",
+            schema=TASK_SCHEMA,
+            instructions="x",
+            expected=EXPECTED,
+        )
+        result = await run_baseline(
+            task, "E_direct_frames", extractor_factory=make_factory(EXPECTED)
+        )
+        assert result.result is None
+        assert result.error is not None
+        assert "TypeError" not in result.error
+        assert "local" in result.error
+        assert "video_path" in result.error
+
     async def test_missing_video_file_is_an_error_not_a_crash(self, tmp_path):
         task = make_task(str(tmp_path / "does-not-exist.mp4"))
         result = await run_baseline(

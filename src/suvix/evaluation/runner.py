@@ -341,6 +341,16 @@ async def _run_e(
     video, error = _resolve_video(task)
     if error:
         return None, error, notes
+    if video is None:
+        # Baseline E samples frames from a local file; an external
+        # video_ref has no local path to sample (previously this fell
+        # through to inspect_video(None) and surfaced a raw TypeError).
+        return (
+            None,
+            "Baseline E requires a local video_path: an external "
+            "video_ref cannot be sampled locally.",
+            notes,
+        )
     extractor = extractor_factory("E_direct_frames")
     capabilities = extractor.capabilities
     if not (capabilities.image_input or capabilities.multi_image):
