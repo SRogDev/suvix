@@ -42,11 +42,22 @@ def uniform_timestamps(
                 f"interval_seconds must be positive, got {interval_seconds}",
                 details={"interval_seconds": interval_seconds},
             )
+        # Index multiplication, not repeated addition: accumulating
+        # t += interval drifts off the i*interval grid (e.g. interval=0.1
+        # over 1.0s accumulated to 0.9999999999999999 at i=10, emitting a
+        # spurious 11th timestamp just inside the duration). Multiplication
+        # keeps every timestamp exactly on the grid, like count mode.
+        # Note: pairwise gaps can still sit one ulp below the interval —
+        # the interval itself is not exactly representable in binary
+        # floating point; the grid values are the contract, not the gaps.
         timestamps: list[float] = []
-        t = 0.0
-        while t < duration_seconds and len(timestamps) < max_frames:
+        i = 0
+        while len(timestamps) < max_frames:
+            t = i * interval_seconds
+            if t >= duration_seconds:
+                break
             timestamps.append(t)
-            t += interval_seconds
+            i += 1
         return timestamps
 
     return [i * duration_seconds / max_frames for i in range(max_frames)]
