@@ -210,6 +210,37 @@ def event_precision_recall_f1(
     return {"precision": precision, "recall": recall, "f1": f1}
 
 
+def event_metrics_by_tolerance(
+    predicted_events: list[dict[str, Any]],
+    expected_events: list[dict[str, Any]],
+    *,
+    tolerances: list[float],
+) -> dict[float, tuple[float | None, float | None, float | None]]:
+    """Precision/recall/F1 at each tolerance in ``tolerances``.
+
+    Returns ``{tolerance: (precision, recall, f1)}`` where each triple is
+    exactly :func:`event_precision_recall_f1` at that tolerance — this is a
+    sensitivity view of the same measurement, not a new metric.
+
+    Rationale: the matching tolerance is a free parameter, and conclusions
+    can swing with its choice (the TGB lesson: matching-standard choice
+    changes rankings). Reporting P/R/F1 at a single tolerance hides that
+    sensitivity; reporting the sweep makes it visible. Tolerance-window
+    matching itself is standard practice (e.g. Charades-STA) *when the
+    tolerance is reported* — this function is how Suvix reports it.
+
+    Limitation: inherits greedy matching and the (type, timestamp) event
+    identity of :func:`event_precision_recall_f1` at every tolerance.
+    """
+    out: dict[float, tuple[float | None, float | None, float | None]] = {}
+    for tolerance in tolerances:
+        prf = event_precision_recall_f1(
+            predicted_events, expected_events, time_tolerance_s=tolerance
+        )
+        out[tolerance] = (prf["precision"], prf["recall"], prf["f1"])
+    return out
+
+
 def count_accuracy(predicted: int | None, expected: int) -> float:
     """Binary object-count accuracy: 1.0 on exact match, 0.0 otherwise.
 
@@ -260,6 +291,43 @@ def timestamp_mae(
     if not pairs:
         return None
     return sum(diff for _, _, diff in pairs) / len(pairs)
+
+
+def timestamp_bias(
+    predicted_events: list[dict[str, Any]],
+    expected_events: list[dict[str, Any]],
+    *,
+    time_tolerance_s: float,
+) -> float | None:
+    """Signed mean timestamp error (pred − expected) over matched pairs.
+
+    Formula: mean(t_pred − t_exp) over the same greedy matched pairs as
+    :func:`timestamp_mae` (same type constraint, same tolerance). ``None``
+    when no pairs match.
+
+    This distinguishes systematic drift from random error: a model that is
+    consistently 0.3s late and a model whose errors are ±0.5s at random can
+    share the same MAE, but the first has bias +0.3 and the second has bias
+    near 0. MAE alone cannot tell them apart — it discards the sign. A
+    non-zero bias that grows with temporal position in the video is the
+    signature of drift (e.g. a frame-rate or clock mismatch), not noise.
+
+    Limitation: unmatched events are invisible, exactly as for MAE — read
+    alongside recall. Cancellation is the point of the metric, not a bug:
+    bias ≈ 0 with a large MAE means symmetric noise, not accuracy.
+    """
+    pairs = _match_events(
+        predicted_events, expected_events, time_tolerance_s=time_tolerance_s
+    )
+    if not pairs:
+        return None
+    signed = []
+    for pred_index, exp_index, _abs_diff in pairs:
+        pred_key = _event_key(predicted_events[pred_index])
+        exp_key = _event_key(expected_events[exp_index])
+        assert pred_key is not None and exp_key is not None  # matched pairs parse
+        signed.append(pred_key[1] - exp_key[1])
+    return sum(signed) / len(signed)
 
 
 def duplicate_event_rate(

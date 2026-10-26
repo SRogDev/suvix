@@ -156,6 +156,41 @@ Single source of truth for where the project stands. Updated with every mileston
     file header).
   - 343 tests green, ruff clean.
 
+## Experiment branches (local, unmerged)
+
+- **2026-10-23 — `feat/oracle-benchmark-pack`** (based on v0.1.0 `main`,
+  local only): proves the benchmark machinery tells the truth + research-
+  justified metric extensions (TGB matching-standard sensitivity,
+  Video-MME-V2 two-axis reporting, TVBench shortcut-defeating tasks,
+  Charades-STA tolerance reporting).
+  - Metrics: `timestamp_bias` (signed mean error over greedy matched
+    pairs — drift vs noise, which MAE cannot distinguish) and
+    `event_metrics_by_tolerance` (P/R/F1 sweep over tolerances), exported
+    from `suvix.evaluation`; runner records `timestamp_bias` per run.
+    Two-axis reporting needed no new field: runner results already record
+    `provider_requests` / `sampled_frames` / `latency_seconds` /
+    `estimated_cost_usd` per run — documented in `docs/benchmarking.md`.
+  - Fixtures: `changing_counts` (2→4 squares at t=4s), `changing_text`
+    (ALPHA→BRAVO), `rapid_events` (0.3s flashes ~1s apart, 0.5s
+    tolerance), `negative_control` (empty expected events). Expectations
+    from generation parameters only; pixel-verified frames
+    (5000 vs 10000 red px); pre-existing fixture sha256s reproduce
+    exactly on regeneration.
+  - Oracle pack (`tests/unit/test_oracle_benchmark.py`): test-local
+    oracle adapter through the real runner recovers known values exactly
+    (perfect → P=R=F1=1, MAE=bias=0, schema=1; +0.3s jitter → MAE=bias=
+    +0.3; drop-half → recall 0.5; duplicate-all → dup rate 0.5; +2
+    hallucinations → precision 2/4; missing required field →
+    schema_pass_rate 0.5 over 2 results). Greedy-vs-optimal divergence
+    measured: greedy recall 0.5 vs brute-force-optimal 1.0 on the crafted
+    case — documented as a known matching limitation.
+  - Evidence: RED (20 failed / 54 passed on the two target test files)
+    → GREEN; full suite 367 passed, 3 skipped with all provider extras
+    (343 v0.1.0 baseline + 24 new; with `--extra dev` only: 316 passed,
+    5 skipped — the 2 Gemini modules skip at import without the SDK).
+    Ruff clean. **Offline pipeline validation only — no provider
+    accuracy is claimed anywhere.**
+
 ## In progress
 
 All 10 milestones complete. v0.1.0 released on `main`.
@@ -210,6 +245,17 @@ All 10 milestones complete. v0.1.0 released on `main`.
   Pegasus 1.5/1.6 + Marengo 3.0 — **Pegasus 1.2 was removed 2026-08-18**;
   URL uploads now 4 GB; current per-model workload rates UNVERIFIED —
   new billing lists allowances, not a rate table).
+- `feat/oracle-benchmark-pack` — offline proof that the benchmark machinery
+  tells the truth: `timestamp_bias` (signed drift diagnostic) and
+  `event_metrics_by_tolerance` (tolerance sensitivity) metrics; four new
+  synthetic ground-truth tasks (`changing_counts`, `changing_text`,
+  `rapid_events`, `negative_control`); an oracle-adapter test suite that
+  asserts the metrics recover exactly known values under controlled noise;
+  the greedy-vs-optimal matching divergence measured and documented in
+  `docs/benchmarking.md`; run entries now record `frames_sampled`
+  (two-axis reporting). Research basis: `docs/research/EXPERIMENT_RESEARCH.md`
+  (TGB, Video-MME-V2, TVBench). Validates the evaluation pipeline only —
+  no provider accuracy claim. Local branch only (GitHub suspended); PR-ready.
 
 ## Pending Roger's action (not blocking the release)
 

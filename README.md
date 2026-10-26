@@ -213,13 +213,7 @@ rejects extractions that produce no evidence references.
 
 No strategy is assumed cheaper or more accurate. The **benchmark suite**
 (`suvix.evaluation`, `benchmarks/`) measures correctness, schema compliance,
-timestamp accuracy, latency, and cost per strategy against direct-provider
-baselines — see [docs/benchmarking.md](docs/benchmarking.md). No pricing is
-registered by default, so cost figures stay unavailable until you register
-your own pricing or explicitly opt in to the one bundled verified snapshot
-(`suvix.evaluation.cost.load_verified_pricing_snapshot()` — Gemini prices
-verified 2026-10-23 against the official pricing page). Negative results
-are retained and reported.
+timestamp accuracy (MAE **and** signed bias — drift is not noise), latency, and cost per strategy against direct-provider baselines — see [docs/benchmarking.md](docs/benchmarking.md). Seven synthetic tasks ship in `benchmarks/tasks/` (including a changing-count, a rapid-event, and a negative-control fixture), and an offline **oracle pack** (`tests/unit/test_oracle_benchmark.py`) proves the metrics recover known values exactly before any provider number is trusted; that is pipeline validation, not a provider accuracy claim. No pricing is registered by default, so cost figures stay unavailable until you register your own pricing or explicitly opt in to the one bundled verified snapshot (`suvix.evaluation.cost.load_verified_pricing_snapshot()` — Gemini prices verified 2026-10-23 against the official pricing page). Negative results are retained and reported.
 
 ## Known limitations
 
