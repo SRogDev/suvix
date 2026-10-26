@@ -265,6 +265,17 @@ All 10 milestones complete. v0.1.0 released on `main`.
   change is a visual transition, not a semantic event; no accuracy claim is
   made. Local branch only (GitHub suspended); PR-ready.
 
+- **`test/property-based-tests`** (based on v0.1.0 `main`): hypothesis
+  property-based tests for pure helpers — `uniform_timestamps` (count /
+  interval invariants, invalid-input rejection), segment offsets and
+  partitioning, `make_frame_id` / `FrameRegistry`, and evidence + semantic
+  validation (duration bounds with the real 0.5s tolerance, frame-registry
+  resolution, duplicate warnings). Found and fixed a real bug: non-finite
+  (NaN/inf) durations/intervals/segment lengths slipped past the `<= 0`
+  guards — NaN returned `[nan, ...]` / `[]`, and an infinite segment
+  duration looped forever; both functions now raise
+  `MediaProcessingError`, with regression tests. 332 tests green
+  (292 baseline + 28 property tests + 12 regression cases), ruff clean.
 
 ## Pending Roger's action (not blocking the release)
 

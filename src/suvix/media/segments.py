@@ -7,6 +7,8 @@ segment) convert to global video timestamps by adding the segment's start.
 
 from __future__ import annotations
 
+import math
+
 from pydantic import BaseModel, model_validator
 
 from suvix.errors import MediaProcessingError
@@ -39,12 +41,12 @@ def split_into_segments(duration_seconds: float, segment_length_seconds: float) 
     ``segment_length_seconds``. The last segment may be shorter. Segment ids
     are zero-padded: ``seg_000``, ``seg_001``, ...
     """
-    if duration_seconds <= 0:
+    if not math.isfinite(duration_seconds) or duration_seconds <= 0:
         raise MediaProcessingError(
             f"duration_seconds must be positive, got {duration_seconds}",
             details={"duration_seconds": duration_seconds},
         )
-    if segment_length_seconds <= 0:
+    if not math.isfinite(segment_length_seconds) or segment_length_seconds <= 0:
         raise MediaProcessingError(
             f"segment_length_seconds must be positive, got {segment_length_seconds}",
             details={"segment_length_seconds": segment_length_seconds},
