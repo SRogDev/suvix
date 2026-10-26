@@ -195,6 +195,21 @@ All 10 milestones complete. v0.1.0 released on `main`.
     test modules `importorskip` their SDKs at module level — 293
     passed / 5 skipped in that env, no failures either way);
     `uv run ruff check src tests` clean; `uv run mypy src/suvix` clean.
+- **`docs/pricing-refresh` (2026-10-23, local only — not merged, no PR):**
+  pricing/docs re-validation against official sources fetched 2026-10-23.
+  Adds the explicitly opt-in `load_verified_pricing_snapshot()` to
+  `suvix.evaluation.cost` (Gemini 2.5 Flash $0.30/$2.50, Pro $1.25/$10.00
+  ≤200k tier only, Flash-Lite $0.10/$0.40 per 1M — source
+  https://ai.google.dev/gemini-api/docs/pricing; default registry still
+  empty). Provider docs refreshed: `docs/providers/gemini.md` (prices,
+  video tokenization, Files API limits, no-deletion-guarantee wording),
+  `openrouter.md` (`usage.cost` = total amount charged to the account,
+  per usage-accounting page updated 2026-10-23; the "openai latest
+  2.32.0" claim could not be confirmed and contradicts `uv.lock`'s
+  3.31.0 — recorded UNVERIFIED), `twelvelabs.md` (current families are
+  Pegasus 1.5/1.6 + Marengo 3.0 — **Pegasus 1.2 was removed 2026-08-18**;
+  URL uploads now 4 GB; current per-model workload rates UNVERIFIED —
+  new billing lists allowances, not a rate table).
 
 ## Pending Roger's action (not blocking the release)
 

@@ -1,6 +1,7 @@
 # TwelveLabs — §7.4 provider verification record
 
-**Verification date:** 2026-10-15
+**Verification date:** 2026-10-15 (models, limits, uploads, and pricing
+re-verified 2026-10-23 — see "Re-verification 2026-10-23" below)
 **Adapter:** `src/suvix/adapters/twelvelabs.py` (`TwelveLabsExtractor`)
 **SDK verified:** `twelvelabs` 1.3.6, introspected locally (class/method signatures,
 type models, and `ApiError(status_code=...)` shape confirmed against the installed
@@ -16,6 +17,57 @@ package — primary evidence alongside the docs)
 - Analyze videos and images quickstart: https://docs.twelvelabs.io/v1.3/docs/get-started/quickstart/analyze-videos-and-images
 - Async analysis (videos > 1h, segmentation): `POST /analyze/tasks` (referenced from
   the sync analysis page; not used by this adapter — see limitations)
+
+## Re-verification 2026-10-23
+
+Sources fetched 2026-10-23: https://www.twelvelabs.io/pricing (canonical
+pricing page), https://docs.twelvelabs.io/api-reference/analyze-videos/analyze
+(sync analysis reference), https://docs.twelvelabs.io/docs/get-started/release-notes,
+https://docs.twelvelabs.io/docs/get-started/quickstart/search.
+Note: https://docs.twelvelabs.io/docs/pricing returned **404** on
+2026-10-23 — there is no pricing page under the docs tree.
+
+- **Current model families (VERIFIED 2026-10-23):**
+  - *Pegasus (analysis):* `pegasus1.5` is the API default and `pegasus1.6`
+    (introduced 2026-10-06, release notes) is the newest; the sync
+    analysis reference lists exactly these two. **Pegasus 1.2 has been
+    REMOVED** — release notes 2026-08-18: the platform rejects requests
+    specifying it. Any record calling Pegasus 1.2 a current family is
+    stale. This adapter's defaults (`pegasus1.5` video / `pegasus1.6`
+    images) match the current platform.
+  - *Marengo (search/embeddings):* **Marengo 3.0** is the current search
+    model (`model_name="marengo3.0"` in the current quickstart; release
+    notes 2026-08-31: "Marengo 3.5 creates embeddings only. For search,
+    use Marengo 3.0"). Suvix does not call Marengo — recorded for
+    orientation only.
+- **Sync analysis limits (re-confirmed VERIFIED 2026-10-23):** video
+  1 second – 1 hour, FFmpeg-supported formats, 360×360 to 5184×2160 px,
+  aspect ratio between 1:1 and 2.4:1; images 1–20 per request,
+  JPEG/PNG/WebP/GIF/BMP, ≤ 20 MB and ≤ 16,777,216 px each, **requires
+  Pegasus 1.6**. Auth is the `x-api-key` header (the adapter reads the
+  key from the `TWELVELABS_API_KEY` environment variable — adapter
+  convention, unchanged).
+- **Upload limits (updated, VERIFIED 2026-10-23):** public video URLs
+  up to **4 GB** (search quickstart) — this supersedes the 2 GB recorded
+  on 2026-10-15 below; local direct uploads ≤ 200 MB (unchanged);
+  multipart uploads support larger local files (release notes
+  2026-07-07: local videos up to 10 GB via multipart; not implemented
+  by this adapter).
+- **Pricing (partially VERIFIED 2026-10-23):** new billing started
+  2026-10-15 (release notes): plans Free / Plus / Pro / Enterprise
+  replace the old Free / Developer / Jockey plans; every plan includes
+  a Managed Intelligence (asset storage) allowance and a separate
+  monthly Workload allowance; existing users migrate by 2027-01-04
+  (pricing page). The Free plan's **600 minutes/month** shared across
+  indexing, analysis, and segmentation is re-confirmed (pricing page
+  FAQ + sync analysis reference). **UNVERIFIED (2026-10-23):** current
+  per-model / per-minute workload rates under the new billing — the
+  fetched pricing page lists allowances, not a rate table. The only
+  per-unit figures on that page are a legacy FAQ comparison for the
+  removed Pegasus 1.2 (indexing $0.042/min, API usage $0.021/min of
+  input video, output text $0.0075 per 1,000 tokens, embedding
+  infrastructure $0.0015 per indexed minute) — **legacy, do not use
+  for current cost estimates**.
 
 ## VERIFIED
 
@@ -109,8 +161,9 @@ No other credentials. The key is never logged and is redacted from error message
 - Local video files: direct upload ≤ 200 MB (`max_file_bytes=209_715_200` in
   capabilities). Larger local files need the multipart upload path (documented,
   not implemented — raises via provider error, not silently).
-- Public URLs: up to 2 GB, must be direct links to raw media (video-hosting or
-  cloud-storage share links are not supported by the platform).
+- Public URLs: up to 4 GB (updated — verified 2026-10-23; was recorded
+  as 2 GB on 2026-10-15), must be direct links to raw media
+  (video-hosting or cloud-storage share links are not supported by the platform).
 - Sync analysis: 1 s – 1 h video. Image path: ≤ 20 images per request.
 
 ## Usage reporting

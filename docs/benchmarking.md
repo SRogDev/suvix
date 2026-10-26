@@ -102,7 +102,7 @@ silently zero):
 
 ## Cost estimation
 
-Suvix ships **no pricing tables**. `resolve_pricing(provider, model)`
+Suvix registers **no pricing by default**. `resolve_pricing(provider, model)`
 returns `(None, "unavailable", "unverified")` until you register your own:
 
 ```python
@@ -114,6 +114,11 @@ cost.register_pricing(
     date="2026-10-15",
 )
 ```
+
+One opt-in exception: `cost.load_verified_pricing_snapshot()` registers
+the Gemini 2.5 Flash / Pro (≤200k tier only) / Flash-Lite prices verified
+against https://ai.google.dev/gemini-api/docs/pricing on 2026-10-23.
+Nothing is registered until you call it.
 
 Per-token tables cover token billing only. Video/second or per-image
 components are not modeled — record them in the run's

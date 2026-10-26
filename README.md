@@ -214,15 +214,18 @@ rejects extractions that produce no evidence references.
 No strategy is assumed cheaper or more accurate. The **benchmark suite**
 (`suvix.evaluation`, `benchmarks/`) measures correctness, schema compliance,
 timestamp accuracy, latency, and cost per strategy against direct-provider
-baselines — see [docs/benchmarking.md](docs/benchmarking.md). No verified
-provider prices are bundled, so cost figures stay unavailable until you register
-your own pricing. Negative results are retained and reported.
+baselines — see [docs/benchmarking.md](docs/benchmarking.md). No pricing is
+registered by default, so cost figures stay unavailable until you register
+your own pricing or explicitly opt in to the one bundled verified snapshot
+(`suvix.evaluation.cost.load_verified_pricing_snapshot()` — Gemini prices
+verified 2026-10-23 against the official pricing page). Negative results
+are retained and reported.
 
 ## Known limitations
 
 - **No cost/accuracy claims ship with this library.** Whether orchestration beats
   direct provider calls is answered only by running `suvix.evaluation` yourself;
-  no verified provider prices are bundled.
+  no pricing is registered by default (one opt-in verified snapshot aside).
 - **Coarse-to-fine is not exhaustive.** The coarse pass can miss brief events;
   it narrows where to look, it does not guarantee finding everything.
 - **Semantic validation checks ranges, not truth.** Timestamps are verified to be
