@@ -60,3 +60,29 @@ def test_explicit_strategy_rejected_when_unsupported():
 def test_planner_never_mentions_switching_provider():
     decision = select_strategy(capabilities=_caps(), options=ExtractionOptions())
     assert "switch" not in decision.reason.lower()
+
+
+def test_scene_sampling_flagged_for_selected_frames():
+    decision = select_strategy(
+        capabilities=_caps(native_video=False),
+        options=ExtractionOptions(sampling="scene_changes"))
+    assert decision.strategy == "selected_frames"
+    assert decision.sampling == "scene_changes"
+    assert decision.requires_scene_sampling is True
+    assert "Scene-change sampling" in decision.reason
+
+
+def test_scene_sampling_ignored_for_native_video():
+    decision = select_strategy(
+        capabilities=_caps(),
+        options=ExtractionOptions(sampling="scene_changes"))
+    assert decision.strategy == "native_video"
+    assert decision.sampling == "uniform"
+    assert decision.requires_scene_sampling is False
+
+
+def test_default_sampling_is_uniform():
+    decision = select_strategy(
+        capabilities=_caps(native_video=False), options=ExtractionOptions())
+    assert decision.sampling == "uniform"
+    assert decision.requires_scene_sampling is False

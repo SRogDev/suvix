@@ -377,21 +377,34 @@ async def _run_selected_frames(
             details={"video_path": video_path},
         )
 
-    # 2. Bounded uniform sampling plan.
+    # 2. Bounded sampling plan: uniform, or scene-change candidates merged
+    # with a uniform floor when the planner flagged scene sampling.
     refine = options.max_refinement_rounds > 0
     coarse_budget = options.max_frames
     if refine:
         # Reserve roughly half the frame budget for fine rounds so the total
         # sampled across coarse + fine rounds never exceeds max_frames.
         coarse_budget = min(options.max_frames, max(2, options.max_frames // 2))
-    timestamps = uniform_timestamps(
-        duration_seconds=duration,
-        max_frames=coarse_budget,
-        interval_seconds=options.coarse_interval_seconds,
-    )
+    if decision.requires_scene_sampling:
+        from suvix.sampling.scene_changes import make_scene_sampler
+
+        scene_sampler = make_scene_sampler(
+            video_path,
+            threshold=options.scene_threshold,
+            floor_fraction=options.scene_floor_fraction,
+        )
+        timestamps = await asyncio.to_thread(
+            scene_sampler, duration_seconds=duration, max_frames=coarse_budget
+        )
+    else:
+        timestamps = uniform_timestamps(
+            duration_seconds=duration,
+            max_frames=coarse_budget,
+            interval_seconds=options.coarse_interval_seconds,
+        )
     if not timestamps:
         raise MediaProcessingError(
-            "Uniform sampling produced no timestamps for "
+            "Sampling produced no timestamps for "
             f"duration_seconds={duration!r}.",
             details={"duration_seconds": duration},
         )

@@ -46,3 +46,22 @@ def test_explicit_values_accepted():
 def test_unknown_fields_rejected():
     with pytest.raises(ValidationError):
         ExtractionOptions(no_such_option=1)  # type: ignore[call-arg]
+
+
+def test_sampling_defaults_to_uniform():
+    opts = ExtractionOptions()
+    assert opts.sampling == "uniform"
+    assert opts.scene_threshold == 0.4
+    assert opts.scene_floor_fraction == 0.5
+
+
+def test_scene_sampling_options_accepted_and_bounded():
+    opts = ExtractionOptions(sampling="scene_changes", scene_threshold=0.0,
+                             scene_floor_fraction=1.0)
+    assert opts.sampling == "scene_changes"
+    with pytest.raises(ValidationError):
+        ExtractionOptions(sampling="bogus")  # type: ignore[arg-type]
+    with pytest.raises(ValidationError):
+        ExtractionOptions(scene_threshold=1.5)
+    with pytest.raises(ValidationError):
+        ExtractionOptions(scene_floor_fraction=-0.1)
